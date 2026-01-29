@@ -13,6 +13,7 @@ import { AlertTriangle, Copy, Check, Clock, KanbanSquare, MessageSquare, LogOut,
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import FinanceDashboard from './components/FinanceDashboard';
 import TeamManagement from './components/TeamManagement';
+import CRMLayout from './components/crm/CRMLayout';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -264,6 +265,7 @@ service cloud.firestore {
         </div>
       )}
       {currentView === 'TEAM' && <TeamManagement currentUser={currentUser} companyId={currentUser.companyId} />}
+      {currentView === 'CRM' && <CRMLayout currentUser={currentUser} companyId={currentUser.companyId} onUpdateUser={handleUpdateUser} />}
       {/* Super Admin Route */}
       {currentView === 'SUPER_ADMIN_DASHBOARD' && currentUser.role === 'SUPER_ADMIN' && (
         <SuperAdminDashboard currentUser={currentUser} />

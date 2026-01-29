@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Clock, KanbanSquare, MessageSquare, LogOut, Check, X, Camera, UserPlus, Copy, User as UserIcon, ShieldAlert, DollarSign, Users } from 'lucide-react';
+import { Clock, KanbanSquare, MessageSquare, LogOut, Check, X, Camera, UserPlus, Copy, User as UserIcon, ShieldAlert, DollarSign, Users, Target } from 'lucide-react';
 import { User, ViewState, Company } from '../types';
 import { storageService } from '../services/storageService';
 import AvatarEditor from './AvatarEditor';
@@ -34,6 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
     { id: 'CHAT' as ViewState, label: 'Chat Equipe', icon: MessageSquare },
     { id: 'FINANCE' as ViewState, label: 'Financeiro', icon: DollarSign },
     { id: 'TEAM' as ViewState, label: 'Equipe', icon: Users },
+    { id: 'CRM' as ViewState, label: 'CRM & Vendas', icon: Target },
     { id: 'SUPER_ADMIN_DASHBOARD' as ViewState, label: 'Admin Dashboard', icon: ShieldAlert },
   ];
 
@@ -57,7 +58,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
 
     // Default for Members (if no permissions set): Clock, Projects, Chat only.
     // Exclude Finance, Team, AdminDash
-    const defaults = ['TIME_CLOCK', 'PROJECTS', 'CHAT'];
+    const defaults = ['TIME_CLOCK', 'PROJECTS', 'CHAT', 'CRM'];
     return defaults.includes(item.id);
   });
 

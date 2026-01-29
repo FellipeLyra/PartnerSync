@@ -110,4 +110,73 @@ export interface Transaction {
   createdBy: string;
 }
 
-export type ViewState = 'TIME_CLOCK' | 'PROJECTS' | 'CHAT' | 'SUPER_ADMIN_DASHBOARD' | 'FINANCE' | 'TEAM';
+export type ViewState = 'TIME_CLOCK' | 'PROJECTS' | 'CHAT' | 'SUPER_ADMIN_DASHBOARD' | 'FINANCE' | 'TEAM' | 'CRM';
+
+// CRM TYPES
+
+export interface Client {
+  id: string;
+  companyId: string;
+  name: string; // Contact Person Name
+  email?: string;
+  phone?: string;
+  organizationName?: string; // Company Name (e.g., "Tech Corp")
+  cnpj?: string;
+  role?: string; // e.g., "CEO", "Marketing Manager"
+  linkedinProfile?: string;
+  revenueHistory?: number; // Total revenue generated from this client
+  leadSource?: string; // e.g., "Website", "Referral"
+  tags?: string[];
+  notes?: string;
+  address?: string;
+  createdAt: number;
+}
+
+export interface Deal {
+  id: string;
+  companyId: string;
+  clientId: string;
+  title: string;
+  value: number;
+  pipelineId?: string; // For multiple pipelines
+  stageId: string; // Column ID
+  probability: number; // 0-100%
+  expectedCloseDate?: string;
+  status: 'OPEN' | 'WON' | 'LOST';
+  lostReason?: string;
+  tags?: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Interaction {
+  id: string;
+  companyId: string;
+  clientId: string;
+  dealId?: string;
+  type: 'CALL' | 'EMAIL' | 'MEETING' | 'NOTE' | 'WHATSAPP';
+  content: string;
+  date: number;
+  performedBy: string; // User ID
+}
+
+export interface CRMPipeline {
+  id: string;
+  companyId: string; // If custom pipelines are allowed per company
+  name: string;
+  stages: Column[];
+}
+
+export interface ClientMessage {
+  id: string;
+  companyId: string;
+  clientId: string;
+  direction: 'INBOUND' | 'OUTBOUND'; // INBOUND = Do cliente para nós, OUTBOUND = Nós para cliente
+  content: string;
+  timestamp: number;
+  status: 'SENT' | 'DELIVERED' | 'READ';
+  type: 'TEXT' | 'IMAGE' | 'DOCUMENT';
+  mediaUrl?: string;
+  senderId?: string; // ID of the user (employee) who sent the message
+  senderName?: string; // Display name
+}
