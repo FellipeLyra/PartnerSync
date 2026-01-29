@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
-import { Clock, Layout as LayoutIcon, MessageSquare, LogOut, User as UserIcon, Camera } from 'lucide-react';
-import { User, ViewState } from '../types';
+import React, { useRef, useState, useEffect } from 'react';
+import { Clock, KanbanSquare, MessageSquare, LogOut, Check, X, Camera, UserPlus, Copy, User as UserIcon, ShieldAlert, DollarSign, Users } from 'lucide-react';
+import { User, ViewState, Company } from '../types';
+import { storageService } from '../services/storageService';
 import AvatarEditor from './AvatarEditor';
 
 interface LayoutProps {
@@ -10,18 +11,55 @@ interface LayoutProps {
   onChangeView: (view: ViewState) => void;
   onLogout: () => void;
   onUpdateUser: (user: User) => void;
+  unreadCount?: number;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onChangeView, onLogout, onUpdateUser }) => {
+const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onChangeView, onLogout, onUpdateUser, unreadCount = 0 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [company, setCompany] = useState<Company | null>(null);
 
-  const navItems = [
+  useEffect(() => {
+    if (currentUser?.companyId) {
+      storageService.getCompany(currentUser.companyId).then(setCompany);
+    }
+  }, [currentUser]);
+
+  // Define all possible items first
+  const allNavItems = [
     { id: 'TIME_CLOCK' as ViewState, label: 'Bater Ponto', icon: Clock },
-    { id: 'PROJECTS' as ViewState, label: 'Projetos', icon: LayoutIcon },
+    { id: 'PROJECTS' as ViewState, label: 'Projetos', icon: KanbanSquare },
     { id: 'CHAT' as ViewState, label: 'Chat Equipe', icon: MessageSquare },
+    { id: 'FINANCE' as ViewState, label: 'Financeiro', icon: DollarSign },
+    { id: 'TEAM' as ViewState, label: 'Equipe', icon: Users },
+    { id: 'SUPER_ADMIN_DASHBOARD' as ViewState, label: 'Admin Dashboard', icon: ShieldAlert },
   ];
+
+  // Filter based on Permissions and Role
+  const navItems = allNavItems.filter(item => {
+    // 1. Super Admin Specific
+    if (item.id === 'SUPER_ADMIN_DASHBOARD') {
+      return currentUser.role === 'SUPER_ADMIN';
+    }
+
+    // 2. Admin & Super Admin get access to Management Tools (Finance, Team) automatically
+    if (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') {
+      return true;
+    }
+
+    // 3. Regular Members
+    // If specific permissions are set, use them
+    if (currentUser.permissions && currentUser.permissions.allowedViews) {
+      return currentUser.permissions.allowedViews.includes(item.id);
+    }
+
+    // Default for Members (if no permissions set): Clock, Projects, Chat only.
+    // Exclude Finance, Team, AdminDash
+    const defaults = ['TIME_CLOCK', 'PROJECTS', 'CHAT'];
+    return defaults.includes(item.id);
+  });
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -63,45 +101,68 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
             <button
               key={item.id}
               onClick={() => onChangeView(item.id)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                currentView === item.id
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
-                  : 'text-slate-400 hover:bg-slate-700 hover:text-white'
-              }`}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 relative ${currentView === item.id
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
+                : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                }`}
             >
               <item.icon size={20} />
               <span className="font-medium">{item.label}</span>
+              {/* Unread Badge for Chat */}
+              {item.id === 'CHAT' && unreadCount > 0 && (
+                <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-700 bg-slate-800/50">
+        {/* User Profile & Invite */}
+        <div className="p-4 border-t border-slate-700 bg-slate-800/50 space-y-3">
+          {/* Invite Button - Visible if company loaded */}
+          {company && (
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="w-full flex items-center justify-center lg:justify-start p-2 rounded-lg hover:bg-slate-700 text-indigo-400 transition-colors"
+              title="Convidar Equipe"
+            >
+              <UserPlus size={20} />
+              <span className="ml-3 hidden lg:block font-medium text-sm">Convidar</span>
+            </button>
+          )}
+
+          {/* Debug Info */}
+          <div className="text-[10px] text-slate-500 hidden lg:block text-center lg:text-left">
+            {company ? `Co: ${company.inviteCode}` : 'Loading...'}
+          </div>
+
           <div className="flex items-center space-x-3 mb-4">
             {/* Avatar with Click to Edit */}
-            <div 
-                className="relative group cursor-pointer"
-                onClick={handleAvatarClick}
-                title="Clique para alterar foto"
+            <div
+              className="relative group cursor-pointer"
+              onClick={handleAvatarClick}
+              title="Clique para alterar foto"
             >
-                <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden border-2 border-slate-500 group-hover:border-indigo-500 transition-colors">
-                   {currentUser.avatar ? (
-                     <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                   ) : (
-                     <UserIcon size={24} className="text-slate-300" />
-                   )}
-                </div>
-                {/* Overlay Icon */}
-                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Camera size={14} className="text-white"/>
-                </div>
-                {/* Hidden Input */}
-                <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/*"
-                    onChange={handleFileChange}
-                />
+              <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden border-2 border-slate-500 group-hover:border-indigo-500 transition-colors">
+                {currentUser.avatar ? (
+                  <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon size={24} className="text-slate-300" />
+                )}
+              </div>
+              {/* Overlay Icon */}
+              <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera size={14} className="text-white" />
+              </div>
+              {/* Hidden Input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
             </div>
 
             <div className="flex-1 min-w-0">
@@ -124,12 +185,49 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
         {children}
       </main>
 
+      {/* Modals */}
+      {showInviteModal && company && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-slate-700 shadow-2xl animate-fade-in relative transition-all transform scale-100">
+            <button onClick={() => setShowInviteModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+              <X size={24} />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <UserPlus size={32} className="text-indigo-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-white">Convidar Equipe</h2>
+              <p className="text-slate-400 mt-2">Compartilhe este código com seus colaboradores para que eles entrem na <strong>{company.name}</strong>.</p>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center mb-6 relative group">
+              <span className="text-4xl font-mono font-bold text-white tracking-[0.5em] pl-4 select-all">
+                {company.inviteCode}
+              </span>
+              <p className="text-xs text-slate-500 mt-4 uppercase tracking-widest">Código Único</p>
+            </div>
+
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(company.inviteCode);
+                // Optional: Show toast
+              }}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center transform active:scale-95"
+            >
+              <Copy size={18} className="mr-2" />
+              Copiar Código
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Avatar Editor Modal */}
       {showEditor && selectedImage && (
-        <AvatarEditor 
-            imageSrc={selectedImage}
-            onSave={handleSaveAvatar}
-            onCancel={() => { setShowEditor(false); setSelectedImage(null); }}
+        <AvatarEditor
+          imageSrc={selectedImage}
+          onSave={handleSaveAvatar}
+          onCancel={() => { setShowEditor(false); setSelectedImage(null); }}
         />
       )}
     </div>

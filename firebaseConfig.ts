@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import * as firebaseAuth from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // Configuração do seu projeto Firebase (PartnerSync)
 const firebaseConfig = {
@@ -17,15 +18,17 @@ const firebaseConfig = {
 let app;
 let auth;
 let db;
+let storage;
 let googleProvider;
 
 try {
-    app = initializeApp(firebaseConfig);
-    auth = firebaseAuth.getAuth(app);
-    db = getFirestore(app);
-    googleProvider = new firebaseAuth.GoogleAuthProvider();
+  app = initializeApp(firebaseConfig);
+  auth = firebaseAuth.getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+  googleProvider = new firebaseAuth.GoogleAuthProvider();
 } catch (error) {
-    console.error("Erro ao inicializar Firebase. Verifique se as chaves estão corretas.", error);
+  console.error("Erro ao inicializar Firebase. Verifique se as chaves estão corretas.", error);
 }
 
-export { auth, db, googleProvider };
+export { auth, db, storage, googleProvider };

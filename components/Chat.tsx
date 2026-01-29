@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User as UserIcon, Sparkles, Paperclip, X, Image as ImageIcon, AlertTriangle, Loader2, MoreVertical, Star, Trash2, Edit2, Reply, Check } from 'lucide-react';
+import { Send, Bot, User as UserIcon, Sparkles, Paperclip, X, Image as ImageIcon, AlertTriangle, Loader2, MoreVertical, Star, Trash2, Edit2, Reply, Check, Copy } from 'lucide-react';
 import { User, ChatMessage } from '../types';
 import { storageService } from '../services/storageService';
+import { fileService } from '../services/fileService';
 import { askGemini } from '../services/geminiService';
+import { notificationService } from '../services/notificationService';
 
 interface ChatProps {
     currentUser: User;
+    companyId: string;
     projectId?: string; // 'global' if undefined
     title?: string;
     isEmbedded?: boolean; // If true, renders with a close button and slightly different layout
@@ -14,6 +17,7 @@ interface ChatProps {
 
 const Chat: React.FC<ChatProps> = ({
     currentUser,
+    companyId,
     projectId = 'global',
     title = 'Chat da Equipe',
     isEmbedded = false,
@@ -22,7 +26,7 @@ const Chat: React.FC<ChatProps> = ({
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [isAiThinking, setIsAiThinking] = useState(false);
-    const [attachment, setAttachment] = useState<{ url: string, type: 'image' | 'video' } | null>(null);
+    const [attachment, setAttachment] = useState<{ file?: File, url: string, type: 'image' | 'video' } | null>(null);
     const [indexErrorLink, setIndexErrorLink] = useState<string | null>(null);
     const [isIndexBuilding, setIsIndexBuilding] = useState(false);
 
@@ -31,13 +35,26 @@ const Chat: React.FC<ChatProps> = ({
     const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, msgId: string, isMe: boolean } | null>(null);
 
+    // Selection mode states
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
+
     // Legacy Avatar Support for old messages
     const [knownAvatars, setKnownAvatars] = useState<Record<string, string>>({});
     const knownAvatarsRef = useRef<Record<string, string>>({}); // Ref to avoid useEffect dependency loops
 
+    // Track previous messages for new message detection
+    const previousMessagesRef = useRef<ChatMessage[]>([]);
+    const currentUserRef = useRef(currentUser);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const chatContainerRef = useRef<HTMLDivElement>(null);
+
+    // Update currentUserRef when currentUser changes
+    useEffect(() => {
+        currentUserRef.current = currentUser;
+    }, [currentUser]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -49,7 +66,9 @@ const Chat: React.FC<ChatProps> = ({
         setEditingMessageId(null);
         setReplyToMessage(null);
 
-        const unsubscribe = storageService.subscribeChat(projectId, (msgs) => {
+        if (!companyId) return;
+
+        const unsubscribe = storageService.subscribeChat(companyId, projectId, (msgs) => {
             setMessages(msgs);
             setIndexErrorLink(null);
             setIsIndexBuilding(false);
@@ -65,7 +84,7 @@ const Chat: React.FC<ChatProps> = ({
             }
         });
         return () => unsubscribe();
-    }, [projectId]);
+    }, [projectId, companyId]);
 
     // Robust Avatar Loading for Legacy Messages
     useEffect(() => {
@@ -118,31 +137,177 @@ const Chat: React.FC<ChatProps> = ({
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const type = file.type.startsWith('video') ? 'video' : 'image';
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setAttachment({
-                    url: reader.result as string,
-                    type: type
-                });
-            };
-            reader.readAsDataURL(file);
+            processFile(file);
         }
         if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handlePaste = (e: React.ClipboardEvent) => {
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    processFile(file);
+                    e.preventDefault(); // Prevent pasting the image binary as text
+                }
+            }
+        }
+    };
+
+    const compressImage = (file: File): Promise<File> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // Max dimensions (Full HD)
+                    const MAX_WIDTH = 1920;
+                    const MAX_HEIGHT = 1080;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx?.drawImage(img, 0, 0, width, height);
+
+                    // Compress to JPEG 0.7 quality
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const compressedFile = new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now(),
+                            });
+                            resolve(compressedFile);
+                        } else {
+                            reject(new Error('Compression failed'));
+                        }
+                    }, 'image/jpeg', 0.7);
+                };
+                img.onerror = (error) => reject(error);
+            };
+            reader.onerror = (error) => reject(error);
+        });
+    };
+
+    const processFile = async (file: File) => {
+        // Check real max limit (50MB) 
+        // Note: We check before compression. Compression will reduce it further.
+        if (file.size > 50 * 1024 * 1024) {
+            alert("O arquivo é muito grande (máx 50MB).");
+            return;
+        }
+
+        let fileToProcess = file;
+
+        // Compress images if > 1MB
+        if (file.type.startsWith('image') && file.size > 1024 * 1024) {
+            try {
+                fileToProcess = await compressImage(file);
+                console.log(`Compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(fileToProcess.size / 1024 / 1024).toFixed(2)}MB`);
+            } catch (error) {
+                console.error("Image compression failed, using original:", error);
+            }
+        }
+
+        const type = fileToProcess.type.startsWith('video') ? 'video' : 'image';
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setAttachment({
+                file: fileToProcess, // Store the (potentially compressed) file
+                url: reader.result as string, // Preview
+                type: type
+            });
+        };
+        reader.readAsDataURL(fileToProcess);
+    };
+
+    // Selection mode functions
+    const enterSelectionMode = (messageId?: string) => {
+        setSelectionMode(true);
+        if (messageId) {
+            setSelectedMessages(new Set([messageId]));
+        }
+    };
+
+    const exitSelectionMode = () => {
+        setSelectionMode(false);
+        setSelectedMessages(new Set());
+    };
+
+    const toggleMessageSelection = (messageId: string) => {
+        setSelectedMessages(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(messageId)) {
+                newSet.delete(messageId);
+            } else {
+                newSet.add(messageId);
+            }
+            return newSet;
+        });
+    };
+
+    const deleteSelectedMessages = async () => {
+        if (selectedMessages.size === 0) return;
+
+        try {
+            // Delete each selected message
+            for (const msgId of selectedMessages) {
+                await storageService.deleteChatMessage(msgId);
+            }
+            exitSelectionMode();
+        } catch (error) {
+            console.error('Error deleting messages:', error);
+        }
+    };
+
+    const copySelectedMessages = () => {
+        if (selectedMessages.size === 0) return;
+
+        // Get selected messages in order
+        const selectedMsgs = messages
+            .filter(msg => selectedMessages.has(msg.id))
+            .map(msg => `${msg.username}: ${msg.text}`)
+            .join('\n\n');
+
+        navigator.clipboard.writeText(selectedMsgs);
+        exitSelectionMode();
     };
 
     const handleSendMessage = async () => {
         if (!inputValue.trim() && !attachment) return;
 
         if (editingMessageId) {
-            // Handle Edit
+            // Edit mode (no file changes supported here for simplicity)
             const msgToUpdate = messages.find(m => m.id === editingMessageId);
             if (msgToUpdate) {
-                await storageService.updateChatMessage({
-                    ...msgToUpdate,
-                    text: inputValue,
-                    isEdited: true
-                });
+                try {
+                    await storageService.updateChatMessage({
+                        ...msgToUpdate,
+                        text: inputValue,
+                        isEdited: true
+                    });
+                } catch (error) {
+                    console.error("Error updating message:", error);
+                    alert("Erro ao editar mensagem.");
+                }
             }
             setEditingMessageId(null);
             setInputValue('');
@@ -150,58 +315,95 @@ const Chat: React.FC<ChatProps> = ({
             return;
         }
 
-        // Handle New Message
-        const userMsg: ChatMessage = {
-            id: '', // Auto-generated
-            userId: currentUser.id,
-            username: currentUser.username,
-            text: inputValue,
-            timestamp: Date.now(),
-            mediaUrl: attachment?.url,
-            mediaType: attachment?.type,
-            projectId: projectId,
-            replyTo: replyToMessage ? {
-                id: replyToMessage.id,
-                username: replyToMessage.username,
-                text: replyToMessage.text.substring(0, 50) + (replyToMessage.text.length > 50 ? '...' : '')
-            } : undefined,
-            userAvatar: currentUser.avatar
-        };
+        try {
+            // FALLBACK STRATEGY: Use Base64 directly (Bypass CORS/Storage)
+            // Since we are compressing images, they should fit in Firestore (< 1MB)
+            let uploadedMediaUrl: string | undefined = undefined;
 
-        await storageService.saveChatMessage(userMsg);
-
-        const currentInput = inputValue;
-        setInputValue('');
-        setAttachment(null);
-        setReplyToMessage(null);
-
-        // Gemini Logic
-        if (currentInput.toLowerCase().startsWith('@gemini')) {
-            setIsAiThinking(true);
-            const prompt = currentInput.replace('@gemini', '').trim();
-            const context = projectId === 'global'
-                ? `Você está no Chat Global da Equipe. Usuário: ${currentUser.username}.`
-                : `Você está no Chat do Projeto "${title}". Usuário: ${currentUser.username}.`;
-
-            try {
-                const aiResponseText = await askGemini(prompt, context);
-                const aiMsg: ChatMessage = {
-                    id: '',
-                    userId: 'ai-gemini',
-                    username: 'Gemini AI',
-                    text: aiResponseText,
-                    timestamp: Date.now() + 1,
-                    isAi: true,
-                    projectId: projectId
-                };
-                await storageService.saveChatMessage(aiMsg);
-            } finally {
-                setIsAiThinking(false);
+            if (attachment?.url) {
+                // Check if base64 string is too large for Firestore (approx 1MB limit = ~1.4M chars)
+                // We leave a safety margin (900KB)
+                if (attachment.url.length > 950 * 1024) {
+                    alert("A imagem comprimida ainda é muito grande para salvar diretamente no banco. Tente uma imagem mais simples.");
+                    return;
+                }
+                uploadedMediaUrl = attachment.url;
             }
+
+            // Handle New Message
+            const userMsg: ChatMessage = {
+                id: '', // Auto-generated
+                userId: currentUser.id,
+                username: currentUser.username,
+                text: inputValue,
+                timestamp: Date.now(),
+                mediaUrl: uploadedMediaUrl,
+                mediaType: attachment?.type,
+                companyId: companyId,
+                projectId: projectId,
+                replyTo: replyToMessage ? {
+                    id: replyToMessage.id,
+                    username: replyToMessage.username,
+                    text: replyToMessage.text.substring(0, 50) + (replyToMessage.text.length > 50 ? '...' : '')
+                } : undefined,
+                userAvatar: currentUser.avatar
+            };
+
+            await storageService.saveChatMessage(userMsg);
+
+            const currentInput = inputValue;
+            setInputValue('');
+            setAttachment(null);
+            setReplyToMessage(null);
+
+            // Gemini Logic
+            if (currentInput.toLowerCase().startsWith('@gemini')) {
+                // ... existing gemini logic continues below (partially)
+                // Re-inserting the Gemini logic inside the try/catch or just trigger it
+                triggerGeminiResponse(currentInput);
+            }
+        } catch (error) {
+            console.error("Error sending message:", error);
+            alert("Erro ao enviar mensagem. Tente novamente ou use uma imagem menor.");
         }
     };
 
+    // Extracted helper to avoid nesting deep in replace code
+    const triggerGeminiResponse = async (currentInput: string) => {
+        setIsAiThinking(true);
+        const prompt = currentInput.replace('@gemini', '').trim();
+        const context = projectId === 'global'
+            ? `Você está no Chat Global da Equipe. Usuário: ${currentUser.username}.`
+            : `Você está no Chat do Projeto "${title}". Usuário: ${currentUser.username}.`;
+
+        try {
+            const aiResponseText = await askGemini(prompt, context);
+            const aiMsg: ChatMessage = {
+                id: '',
+                userId: 'ai-gemini',
+                username: 'Gemini AI',
+                text: aiResponseText,
+                timestamp: Date.now() + 1,
+                isAi: true,
+                companyId: companyId,
+                projectId: projectId
+            };
+            await storageService.saveChatMessage(aiMsg);
+        } finally {
+            setIsAiThinking(false);
+        }
+    };
+
+
+
+
     const handleContextMenu = (e: React.MouseEvent, msg: ChatMessage) => {
+        // Allow default context menu for images/videos so users can "Copy Image", "Save As", etc.
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'IMG' || target.tagName === 'VIDEO') {
+            return;
+        }
+
         e.preventDefault();
         // We do NOT use stopPropagation here to allow closing other menus if any
         const isMe = msg.userId === currentUser.id;
@@ -282,27 +484,101 @@ const Chat: React.FC<ChatProps> = ({
         );
     }
 
+    const [isDragging, setIsDragging] = useState(false);
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            processFile(file);
+        }
+    };
+
+    // ... (rest of logic)
+
     return (
-        <div className={`flex flex-col h-full bg-slate-900 ${isEmbedded ? 'border-l border-slate-700' : ''}`} ref={chatContainerRef}>
+        <div
+            className={`flex flex-col h-full bg-slate-900 ${isEmbedded ? 'border-l border-slate-700' : ''} relative`}
+            ref={chatContainerRef}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
+            {isDragging && (
+                <div className="absolute inset-0 z-50 bg-indigo-500/20 backdrop-blur-sm border-2 border-dashed border-indigo-400 m-4 rounded-xl flex items-center justify-center pointer-events-none">
+                    <div className="bg-slate-900 p-4 rounded-xl shadow-xl flex flex-col items-center animate-bounce">
+                        <Paperclip size={32} className="text-indigo-400 mb-2" />
+                        <span className="text-white font-bold">Solte o arquivo aqui</span>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="p-4 border-b border-slate-700 bg-slate-800 flex items-center justify-between shadow-sm flex-shrink-0">
-                <div className="flex items-center min-w-0">
-                    {projectId === 'global' ? <Bot className="mr-2 text-indigo-400 flex-shrink-0" /> : <div className="w-2 h-2 rounded-full bg-indigo-500 mr-2"></div>}
-                    <h2 className="font-bold text-white truncate">{title}</h2>
-                </div>
-                <div className="flex items-center space-x-2">
-                    {!isEmbedded && (
-                        <div className="text-xs text-slate-400 bg-slate-700 px-3 py-1 rounded-full flex items-center hidden md:flex">
-                            <Sparkles size={12} className="mr-1 text-yellow-400" />
-                            <span className="text-indigo-300 font-mono mx-1">@gemini</span>
+                {selectionMode ? (
+                    // Selection mode header
+                    <>
+                        <div className="flex items-center space-x-3">
+                            <button
+                                onClick={exitSelectionMode}
+                                className="text-slate-400 hover:text-white transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                            <span className="text-white font-semibold">
+                                {selectedMessages.size} selecionada{selectedMessages.size !== 1 ? 's' : ''}
+                            </span>
                         </div>
-                    )}
-                    {isEmbedded && onClose && (
-                        <button type="button" onClick={onClose} className="text-slate-400 hover:text-white p-1">
-                            <X size={20} />
-                        </button>
-                    )}
-                </div>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={copySelectedMessages}
+                                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                                title="Copiar"
+                            >
+                                <Copy size={20} />
+                            </button>
+                            <button
+                                onClick={deleteSelectedMessages}
+                                className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
+                                title="Deletar"
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    // Normal header
+                    <>
+                        <div className="flex items-center min-w-0">
+                            {projectId === 'global' ? <Bot className="mr-2 text-indigo-400 flex-shrink-0" /> : <div className="w-2 h-2 rounded-full bg-indigo-500 mr-2"></div>}
+                            <h2 className="font-bold text-white truncate">{title}</h2>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            {!isEmbedded && (
+                                <div className="text-xs text-slate-400 bg-slate-700 px-3 py-1 rounded-full flex items-center hidden md:flex">
+                                    <Sparkles size={12} className="mr-1 text-yellow-400" />
+                                    <span className="text-indigo-300 font-mono mx-1">@gemini</span>
+                                </div>
+                            )}
+                            {isEmbedded && onClose && (
+                                <button type="button" onClick={onClose} className="text-slate-400 hover:text-white p-1">
+                                    <X size={20} />
+                                </button>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Messages */}
@@ -315,6 +591,8 @@ const Chat: React.FC<ChatProps> = ({
                     </div>
                 )}
                 {messages.map((msg) => {
+                    // DEBUG: Check if mediaUrl exists
+                    if (msg.mediaUrl) console.log("Rendering msg with media:", msg.id, msg.mediaType);
                     const isMe = msg.userId === currentUser.id;
                     const isAi = msg.isAi;
 
@@ -336,7 +614,25 @@ const Chat: React.FC<ChatProps> = ({
                             key={msg.id}
                             className={`flex w-full group ${isMe ? 'justify-end' : 'justify-start'}`}
                         >
-                            <div className={`flex max-w-[85%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <div className={`flex max-w-[85%] items-start gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                                {/* Selection checkbox */}
+                                {selectionMode && (
+                                    <div
+                                        onClick={() => toggleMessageSelection(msg.id)}
+                                        className="flex-shrink-0 cursor-pointer mt-1"
+                                    >
+                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${selectedMessages.has(msg.id)
+                                            ? 'bg-indigo-500 border-indigo-500'
+                                            : 'border-slate-500 hover:border-indigo-400'
+                                            }`}>
+                                            {selectedMessages.has(msg.id) && (
+                                                <Check size={14} className="text-white" />
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Avatar */}
                                 {/* Avatar */}
                                 <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden mt-1 ${isAi ? 'bg-indigo-600 text-white' : isMe ? 'bg-emerald-600 text-white' : 'bg-slate-600 text-slate-200'
                                     } ${isMe ? 'ml-2' : 'mr-2'}`}>
@@ -381,7 +677,34 @@ const Chat: React.FC<ChatProps> = ({
                                             </div>
                                         )}
 
-                                        {msg.text}
+                                        {/* Message Text */}
+                                        {msg.text && (
+                                            <p className="select-text">{msg.text}</p>
+                                        )}
+
+                                        {/* YouTube Embed */}
+                                        {(() => {
+                                            const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+                                            const match = msg.text?.match(youtubeRegex);
+                                            if (match) {
+                                                const videoId = match[1];
+                                                return (
+                                                    <div className="mt-2 rounded-lg overflow-hidden">
+                                                        <iframe
+                                                            width="100%"
+                                                            height="200"
+                                                            src={`https://www.youtube.com/embed/${videoId}`}
+                                                            title="YouTube video player"
+                                                            frameBorder="0"
+                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                            allowFullScreen
+                                                            className="rounded-lg"
+                                                        ></iframe>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
 
                                         {msg.isEdited && (
                                             <span className="text-[10px] opacity-60 ml-1 italic align-bottom block text-right mt-1">(editado)</span>
@@ -419,6 +742,16 @@ const Chat: React.FC<ChatProps> = ({
                         className="fixed bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[50] py-1 min-w-[150px] animate-fade-in"
                         style={{ top: Math.min(contextMenu.y, window.innerHeight - 200), left: Math.min(contextMenu.x, window.innerWidth - 160) }}
                     >
+                        <button
+                            onClick={() => {
+                                enterSelectionMode(contextMenu.msgId);
+                                setContextMenu(null);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-slate-200 hover:bg-slate-700 flex items-center"
+                        >
+                            <Check size={16} className="mr-2" />
+                            Selecionar
+                        </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); handleAction('reply'); }}
                             className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center"
@@ -518,6 +851,7 @@ const Chat: React.FC<ChatProps> = ({
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                        onPaste={handlePaste}
                         placeholder={isEmbedded ? "Mensagem..." : "Digite sua mensagem..."}
                         className="flex-1 bg-transparent text-white placeholder-slate-500 px-2 focus:outline-none min-w-0 text-sm"
                     />

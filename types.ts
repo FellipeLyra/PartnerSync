@@ -1,12 +1,34 @@
+// SYSTEM TYPES
+
+export interface Company {
+  id: string;
+  name: string;
+  ownerId: string; // The user who created/owns this company space
+  inviteCode: string; // Unique 6-char code for joining
+  subscription?: 'FREE' | 'PRO';
+  createdAt: number;
+}
+
+export interface UserPermissions {
+  allowedViews: ViewState[];
+  allowedProjectIds?: string[]; // If undefined, all projects. If empty array, no projects.
+}
+
 export interface User {
   id: string;
   username: string;
   avatar: string;
+  email: string; // Should be mandatory now
+  companyId: string; // REQUIRED: Users must belong to a company
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'MEMBER'; // Simple RBAC
   password?: string; // stored plainly for this local demo only
+  phone?: string; // Optional phone number
+  permissions?: UserPermissions;
 }
 
 export interface TimeEntry {
   id: string;
+  companyId: string; // Link to company
   userId: string;
   username: string;
   timestamp: string; // ISO string
@@ -46,6 +68,7 @@ export interface Column {
 
 export interface Project {
   id: string;
+  companyId: string; // Link to company
   name: string;
   description: string;
   tasks: Task[];
@@ -55,6 +78,7 @@ export interface Project {
 
 export interface ChatMessage {
   id: string;
+  companyId: string; // Link to company
   userId: string; // 'system' or 'ai' or user.id
   username: string;
   text: string;
@@ -73,4 +97,17 @@ export interface ChatMessage {
   };
 }
 
-export type ViewState = 'TIME_CLOCK' | 'PROJECTS' | 'CHAT';
+export interface Transaction {
+  id: string;
+  companyId: string;
+  description: string;
+  amount: number;
+  type: 'INCOME' | 'EXPENSE';
+  category: string;
+  date: string; // ISO Date "YYYY-MM-DD"
+  status: 'PAID' | 'PENDING' | 'OVERDUE';
+  createdAt: number;
+  createdBy: string;
+}
+
+export type ViewState = 'TIME_CLOCK' | 'PROJECTS' | 'CHAT' | 'SUPER_ADMIN_DASHBOARD' | 'FINANCE' | 'TEAM';
