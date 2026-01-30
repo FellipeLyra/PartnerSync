@@ -3,7 +3,7 @@ import { Send, Bot, User as UserIcon, Sparkles, Paperclip, X, Image as ImageIcon
 import { User, ChatMessage } from '../types';
 import { storageService } from '../services/storageService';
 import { fileService } from '../services/fileService';
-import { askGemini } from '../services/geminiService';
+import { askOpenAI } from '../services/openaiService';
 import { notificationService } from '../services/notificationService';
 
 interface ChatProps {
@@ -12,6 +12,7 @@ interface ChatProps {
     projectId?: string; // 'global' if undefined
     title?: string;
     isEmbedded?: boolean; // If true, renders with a close button and slightly different layout
+    isAiOnly?: boolean; // If true, all messages trigger AI response without @chat
     onClose?: () => void;
 }
 
@@ -21,6 +22,7 @@ const Chat: React.FC<ChatProps> = ({
     projectId = 'global',
     title = 'Chat da Equipe',
     isEmbedded = false,
+    isAiOnly = false,
     onClose
 }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -38,6 +40,9 @@ const Chat: React.FC<ChatProps> = ({
     // Selection mode states
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
+
+    // Lightbox State
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // Legacy Avatar Support for old messages
     const [knownAvatars, setKnownAvatars] = useState<Record<string, string>>({});
@@ -356,11 +361,13 @@ const Chat: React.FC<ChatProps> = ({
             setAttachment(null);
             setReplyToMessage(null);
 
-            // Gemini Logic
-            if (currentInput.toLowerCase().startsWith('@gemini')) {
-                // ... existing gemini logic continues below (partially)
-                // Re-inserting the Gemini logic inside the try/catch or just trigger it
-                triggerGeminiResponse(currentInput);
+            setReplyToMessage(null);
+
+            // ChatGPT Logic
+            if (isAiOnly || currentInput.toLowerCase().startsWith('@chat')) {
+                // ... existing logic continues below (partially)
+                // Re-inserting the AI logic inside the try/catch or just trigger it
+                triggerAiResponse(currentInput);
             }
         } catch (error) {
             console.error("Error sending message:", error);
@@ -369,19 +376,20 @@ const Chat: React.FC<ChatProps> = ({
     };
 
     // Extracted helper to avoid nesting deep in replace code
-    const triggerGeminiResponse = async (currentInput: string) => {
+    // Extracted helper to avoid nesting deep in replace code
+    const triggerAiResponse = async (currentInput: string) => {
         setIsAiThinking(true);
-        const prompt = currentInput.replace('@gemini', '').trim();
+        const prompt = isAiOnly ? currentInput.trim() : currentInput.replace('@chat', '').trim();
         const context = projectId === 'global'
             ? `Você está no Chat Global da Equipe. Usuário: ${currentUser.username}.`
             : `Você está no Chat do Projeto "${title}". Usuário: ${currentUser.username}.`;
 
         try {
-            const aiResponseText = await askGemini(prompt, context);
+            const aiResponseText = await askOpenAI(prompt, context, companyId);
             const aiMsg: ChatMessage = {
                 id: '',
-                userId: 'ai-gemini',
-                username: 'Gemini AI',
+                userId: 'ai-chatgpt',
+                username: 'ChatGPT',
                 text: aiResponseText,
                 timestamp: Date.now() + 1,
                 isAi: true,
@@ -567,8 +575,8 @@ const Chat: React.FC<ChatProps> = ({
                         <div className="flex items-center space-x-2">
                             {!isEmbedded && (
                                 <div className="text-xs text-slate-700 dark:text-slate-400 bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full flex items-center hidden md:flex transition-colors">
-                                    <Sparkles size={12} className="mr-1 text-yellow-400" />
-                                    <span className="text-indigo-600 dark:text-indigo-300 font-mono mx-1 transition-colors">@gemini</span>
+                                    <Sparkles size={12} className="mr-1 text-green-400" />
+                                    <span className="text-indigo-600 dark:text-indigo-300 font-mono mx-1 transition-colors">@chat</span>
                                 </div>
                             )}
                             {isEmbedded && onClose && (
@@ -656,7 +664,7 @@ const Chat: React.FC<ChatProps> = ({
 
                                     <div
                                         onContextMenu={(e) => handleContextMenu(e, msg)}
-                                        className={`relative px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-md whitespace-pre-wrap break-words cursor-pointer select-text transition-all ${isAi
+                                        className={`relative px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-md whitespace-pre-wrap break-all cursor-pointer select-text transition-all ${isAi
                                             ? 'bg-slate-100 dark:bg-slate-800 border border-indigo-500/30 text-slate-900 dark:text-indigo-100 rounded-tl-none'
                                             : isMe
                                                 ? 'bg-emerald-600 text-white rounded-tr-none hover:bg-emerald-500'
@@ -672,7 +680,15 @@ const Chat: React.FC<ChatProps> = ({
                                                 {msg.mediaType === 'video' ? (
                                                     <video src={msg.mediaUrl} controls className="max-h-48 rounded-lg bg-black/50" />
                                                 ) : (
-                                                    <img src={msg.mediaUrl} alt="attachment" className="max-h-48 rounded-lg object-contain bg-black/20" />
+                                                    <img
+                                                        src={msg.mediaUrl}
+                                                        alt="attachment"
+                                                        className="max-h-48 rounded-lg object-contain bg-black/20 cursor-pointer hover:opacity-90 transition-opacity"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Avoid triggering message selection/context menu
+                                                            setSelectedImage(msg.mediaUrl!);
+                                                        }}
+                                                    />
                                                 )}
                                             </div>
                                         )}
@@ -782,6 +798,27 @@ const Chat: React.FC<ChatProps> = ({
                         )}
                     </div>
                 </>
+            )}
+
+            {/* Image Lightbox */}
+            {selectedImage && (
+                <div
+                    className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <button
+                        className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-2 transition-all"
+                        onClick={() => setSelectedImage(null)}
+                    >
+                        <X size={32} />
+                    </button>
+                    <img
+                        src={selectedImage}
+                        alt="Full size"
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-scale-in"
+                        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the image itself
+                    />
+                </div>
             )}
 
             {/* Input Area */}

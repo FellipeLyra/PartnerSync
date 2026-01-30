@@ -13,7 +13,7 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { User, Project, TimeEntry, ChatMessage, TaskStatus, Company, Transaction, UserPermissions } from '../types';
+import { User, Project, TimeEntry, ChatMessage, TaskStatus, Company, Transaction, UserPermissions, Client, Deal } from '../types';
 
 // Convert Firebase Snapshots to our Types
 const mapDoc = (doc: any) => ({ id: doc.id, ...doc.data() });
@@ -499,5 +499,178 @@ export const storageService = {
     const q = query(collection(db, 'projects'), where('companyId', '==', companyId));
     const snap = await getDocs(q);
     return snap.docs.map(mapDoc) as Project[];
+  },
+
+  // --- AI HELPERS ---
+
+  // Tasks
+  // Tasks
+  addTaskToProject: async (companyId: string, taskTitle: string, columnName: string = 'TODO', targetProjectName?: string) => {
+    if (!db) return;
+
+    let project: Project | null = null;
+    let projects: Project[] = [];
+
+    // 1. Fetch available projects
+    // We intentionally fetch all (assuming small number) to handle name matching better in JS
+    const q = query(collection(db, 'projects'), where('companyId', '==', companyId));
+    const snap = await getDocs(q);
+    projects = snap.docs.map(mapDoc) as Project[];
+
+    if (projects.length === 0) {
+      throw new Error("Nenhum projeto encontrado.");
+    }
+
+    // 2. Find Target Project
+    if (targetProjectName) {
+      const lowerTarget = targetProjectName.toLowerCase();
+      project = projects.find(p => p.name.toLowerCase().includes(lowerTarget)) || null;
+    }
+
+    // Fallback if not found or not specified: Use 'Geral' or first available
+    if (!project) {
+      // If specific target requested but not found, stick to first one but maybe we should warn?
+      // Ideally we pick 'Geral' if exists, otherwise first.
+      project = projects.find(p => p.name.toLowerCase() === 'geral') || projects[0];
+    }
+
+    // 3. Resolve Column/Status
+    // Map common input terms to internal IDs
+    let statusId = 'TODO'; // Default
+    const lowerCol = columnName.toLowerCase();
+
+    if (lowerCol.includes('doing') || lowerCol.includes('progresso') || lowerCol.includes('fazendo')) {
+      statusId = 'DOING';
+    } else if (lowerCol.includes('done') || lowerCol.includes('conclu') || lowerCol.includes('feito')) {
+      statusId = 'DONE';
+    } else {
+      statusId = 'TODO'; // 'to do', 'a fazer', 'pendente' -> TODO
+    }
+
+    // Check if project has custom columns with matching ID or Title
+    if (project.columns && project.columns.length > 0) {
+      const customCol = project.columns.find(c =>
+        c.id.toLowerCase() === lowerCol ||
+        c.title.toLowerCase().includes(lowerCol)
+      );
+      if (customCol) {
+        statusId = customCol.id;
+      } else {
+        // Validate if our mapped statusId exists in custom columns. 
+        // If the project uses completely custom IDs (e.g. 'col-123'), 'TODO' might be invalid.
+        // Safe fallback: use the first column.
+        const hasDefault = project.columns.some(c => c.id === statusId);
+        if (!hasDefault) {
+          statusId = project.columns[0].id;
+        }
+      }
+    }
+
+    // 4. Add Task
+    const newTask = {
+      id: Date.now().toString(),
+      content: taskTitle,
+      description: '',
+      status: statusId,
+      assignee: 'AI',
+      priority: 'MEDIUM',
+      dueDate: new Date().toISOString(),
+      createdAt: Date.now()
+    };
+
+    const currentTasks = project.tasks || [];
+    const updatedTasks = [...currentTasks, newTask];
+
+    await setDoc(doc(db, 'projects', project.id), { tasks: updatedTasks }, { merge: true });
+    return project.name;
+  },
+
+  // Finance Report
+  getFinancialReport: async (companyId: string): Promise<string> => {
+    if (!db) return "Erro DB";
+
+    // Get transactions for current month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+
+    const q = query(collection(db, 'transactions'), where('companyId', '==', companyId));
+    const snap = await getDocs(q);
+    const transactions = snap.docs.map(mapDoc) as Transaction[];
+
+    const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM
+
+    const filtered = transactions.filter(t => t.date.startsWith(currentMonth));
+
+    const income = filtered
+      .filter(t => t.type === 'INCOME' && t.status === 'PAID')
+      .reduce((acc, curr) => acc + curr.amount, 0);
+
+    const expense = filtered
+      .filter(t => t.type === 'EXPENSE' && t.status === 'PAID')
+      .reduce((acc, curr) => acc + curr.amount, 0);
+
+    const balance = income - expense;
+
+    const pending = filtered
+      .filter(t => t.status === 'PENDING' || t.status === 'OVERDUE')
+      .reduce((acc, curr) => acc + (curr.type === 'INCOME' ? curr.amount : -curr.amount), 0);
+
+    return `Relatório Financeiro (${currentMonth}):
+     - Receitas (Pagas): R$ ${income.toFixed(2)}
+     - Despesas (Pagas): R$ ${expense.toFixed(2)}
+     - Saldo Líquido: R$ ${balance.toFixed(2)}
+     - Pendente: R$ ${pending.toFixed(2)}`;
+  },
+
+  // CRM Helpers
+  getClientByName: async (companyId: string, name: string): Promise<Client | null> => {
+    if (!db) return null;
+    // Firestore doesn't support "contains" directly. We fetch all for company and filter in JS (assuming reasonable client count)
+    // Or we rely on exact match? Let's try partial match in JS for better UX.
+    const q = query(collection(db, 'clients'), where('companyId', '==', companyId));
+    const snap = await getDocs(q);
+    const clients = snap.docs.map(mapDoc) as Client[];
+
+    // Find best match
+    const match = clients.find(c => c.name.toLowerCase().includes(name.toLowerCase()) ||
+      (c.organizationName && c.organizationName.toLowerCase().includes(name.toLowerCase())));
+    return match || null;
+  },
+
+  addDeal: async (companyId: string, deal: Partial<Deal>) => {
+    if (!db) return;
+
+    // Default to 'PROSPECT' as defined in PipelineBoard.tsx
+    let stageId = 'PROSPECT';
+
+    // Map text stages from AI to internal IDs if provided
+    if (deal.stageId) {
+      const lower = deal.stageId.toLowerCase();
+      if (lower.includes('quali')) stageId = 'QUALIFICATION';
+      else if (lower.includes('prop')) stageId = 'PROPOSAL';
+      else if (lower.includes('negoc')) stageId = 'NEGOTIATION';
+      else if (lower.includes('ganho') || lower.includes('fech')) stageId = 'WON';
+      else if (lower.includes('perd')) stageId = 'LOST';
+      else stageId = 'PROSPECT';
+    }
+
+    const newDeal: Deal = {
+      id: '',
+      companyId,
+      clientId: deal.clientId!,
+      title: deal.title || 'Nova Oportunidade',
+      value: deal.value || 0,
+      stageId: stageId,
+      probability: deal.probability || 50,
+      status: 'OPEN',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      ...deal
+    } as Deal;
+
+    const { id, ...data } = newDeal;
+    await addDoc(collection(db, 'deals'), deepSanitize(data));
+    return newDeal.title;
   }
 };

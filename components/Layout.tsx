@@ -5,6 +5,8 @@ import { storageService } from '../services/storageService';
 import { ThemeToggle } from './ThemeToggle';
 import ProfileSettingsModal from './ProfileSettingsModal';
 
+import Chat from './Chat';
+
 interface LayoutProps {
   children: React.ReactNode;
   currentUser: User;
@@ -18,6 +20,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onChangeView, onLogout, onUpdateUser, unreadCount = 0 }) => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAiChat, setShowAiChat] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
 
   useEffect(() => {
@@ -203,6 +206,40 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
         onClose={() => setShowProfileModal(false)}
         onUpdateUser={onUpdateUser}
       />
+
+      {/* Global AI Assistant FAB */}
+      {currentView !== 'TEAM' && currentView !== 'SUPER_ADMIN_DASHBOARD' && currentView !== 'CHAT' && (
+        <>
+          <div className="fixed bottom-6 right-6 z-40">
+            <button
+              onClick={() => {
+                const newState = !showAiChat;
+                setShowAiChat(newState);
+              }}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 border-2 border-indigo-400"
+              title="Assistente AI"
+            >
+              {showAiChat ? <X size={24} /> : <MessageSquare size={24} />}
+            </button>
+          </div>
+
+          {/* AI Chat Popover */}
+          {showAiChat && (
+            <div className="fixed bottom-24 right-6 z-40 w-96 h-[500px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col animate-fade-in-up">
+              <Chat
+                currentUser={currentUser}
+                companyId={currentUser.companyId}
+                projectId={`ai-${currentUser.id}`}
+                title="PartnerSync AI"
+                isEmbedded={true}
+                isAiOnly={true}
+                onClose={() => setShowAiChat(false)}
+              />
+            </div>
+          )}
+        </>
+      )}
+
     </div>
   );
 };

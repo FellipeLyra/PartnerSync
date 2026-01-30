@@ -216,7 +216,7 @@ const ClientChat: React.FC<ClientChatProps> = ({ client, currentUser, companyId,
                                                 </a>
                                             </div>
                                         ) : (
-                                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                                            <p className="whitespace-pre-wrap break-all">{msg.content}</p>
                                         )}
 
                                         <div className={`text-[10px] mt-1 text-right ${isMe ? 'text-emerald-700 dark:text-emerald-200' : 'text-slate-500 dark:text-slate-400'
