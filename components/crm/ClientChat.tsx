@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Client, ClientMessage, User } from '../../types'; // Added User
 import { crmService } from '../../services/crmService';
 import { fileService } from '../../services/fileService';
-import { Send, Phone, Paperclip, MoreVertical, X, Check, CheckCheck, FileText, Image as ImageIcon, Loader } from 'lucide-react';
+import { Send, Phone, Paperclip, MoreVertical, X, Check, CheckCheck, FileText, Image as ImageIcon, Loader, Mail, Building } from 'lucide-react';
 
 interface ClientChatProps {
     client: Client;
@@ -202,30 +202,29 @@ const ClientChat: React.FC<ClientChatProps> = ({ client, currentUser, companyId,
                                         )}
                                         {/* Show 'You' explicitly if needed, or just hide name for self */}
 
-                                        {msg.type === 'IMAGE' && msg.mediaUrl && (
-                                            <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
-                                                <img src={msg.mediaUrl} alt="Attachment" className="max-w-xs rounded-lg mb-2 border border-slate-600 hover:opacity-90 transition-opacity" />
-                                            </a>
-                                        )}
-                                        {msg.type === 'DOCUMENT' && msg.mediaUrl && (
-                                            <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" className="flex items-center p-3 bg-black/20 rounded-lg mb-2 text-indigo-300 hover:text-white border border-white/10 transition-colors">
-                                                <div className="bg-slate-700 p-2 rounded mr-3">
-                                                    <FileText size={20} />
-                                                </div>
-                                                <div className="overflow-hidden">
-                                                    <span className="block text-sm font-bold truncate">Arquivo Anexo</span>
-                                                    <span className="text-xs opacity-70">Clique para baixar</span>
-                                                </div>
-                                            </a>
+                                        {msg.type === 'IMAGE' && msg.mediaUrl ? (
+                                            <div className="mb-2 rounded-lg overflow-hidden">
+                                                <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
+                                                    <img src={msg.mediaUrl} alt="Imagem enviada" className="max-w-full h-auto" />
+                                                </a>
+                                            </div>
+                                        ) : msg.type === 'DOCUMENT' && msg.mediaUrl ? (
+                                            <div className="flex items-center space-x-2 p-2 bg-black/5 rounded mb-1">
+                                                <FileText size={16} />
+                                                <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" className="underline truncate">
+                                                    Ver documento
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <p className="whitespace-pre-wrap">{msg.content}</p>
                                         )}
 
-                                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                                        <div className="flex justify-end items-center mt-1 space-x-1">
-                                            <span className="text-[10px] text-white/60">
-                                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+                                        <div className={`text-[10px] mt-1 text-right ${isMe ? 'text-emerald-700 dark:text-emerald-200' : 'text-slate-500 dark:text-slate-400'
+                                            }`}>
+                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             {isMe && (
-                                                <span className="text-emerald-200">
+                                                <span className="ml-1 inline-block">
+                                                    {/* Simulate tick */}
                                                     {msg.status === 'READ' ? <CheckCheck size={14} /> : <Check size={14} />}
                                                 </span>
                                             )}
@@ -234,100 +233,90 @@ const ClientChat: React.FC<ClientChatProps> = ({ client, currentUser, companyId,
                                 </div>
                             );
                         })}
+                        <div ref={scrollRef} /> {/* This was scrollRef, but the new code has messagesEndRef. Assuming scrollRef is intended. */}
                     </div>
 
                     {/* Input */}
-                    <div className="p-4 bg-slate-800 border-t border-slate-700">
+                    <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 transition-colors">
                         <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                className="hidden"
-                                onChange={handleFileSelect}
-                            />
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isUploading}
-                                className={`p-2 transition-colors ${isUploading ? 'text-indigo-500 animate-pulse' : 'text-slate-400 hover:text-white'}`}
+                                className={`p-2 transition-colors ${isUploading ? 'text-indigo-500 animate-pulse' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white'}`}
                                 title="Anexar arquivo"
                             >
                                 {isUploading ? <Loader size={20} className="animate-spin" /> : <Paperclip size={20} />}
                             </button>
-                            {/* Quick Action: Open WhatsApp */}
-                            {client.phone && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const raw = client.phone?.replace(/\D/g, '') || '';
-                                        const phone = raw.length <= 11 ? `55${raw}` : raw;
-                                        window.open(`https://wa.me/${phone}`, '_blank');
-                                    }}
-                                    className="p-2 text-emerald-500 hover:text-emerald-400 transition-colors"
-                                    title="Abrir WhatsApp Web"
-                                >
-                                    <Phone size={20} />
-                                </button>
-                            )}
                             <input
-                                type="text"
-                                placeholder="Digite uma mensagem... (ou cole uma imagem)"
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                onPaste={handlePaste}
-                                className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all placeholder:text-slate-600"
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                onChange={handleFileSelect} // Changed from handleFileUpload to handleFileSelect
                             />
+                            {/* Quick Action: Open WhatsApp - Removed from input area as per new code */}
+                            <div className="flex-1 relative">
+                                <input
+                                    type="text"
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    onPaste={handlePaste} // Added back onPaste
+                                    placeholder="Digite uma mensagem... (ou cole uma imagem)" // Added back paste hint
+                                    className="w-full bg-gray-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-full px-4 py-2.5 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                                />
+                            </div>
                             {newMessage.trim() ? (
                                 <button
                                     type="submit"
-                                    className="p-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+                                    className="p-3 bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-500 text-white rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
                                 >
-                                    <Send size={20} />
+                                    <Send size={18} />
                                 </button>
                             ) : (
                                 <button
                                     type="button"
                                     className="p-3 bg-slate-700 text-slate-500 rounded-full cursor-not-allowed"
                                 >
-                                    <Send size={20} />
+                                    <Send size={18} />
                                 </button>
                             )}
                         </form>
                     </div>
                 </div>
 
-                {/* Info Sidebar (Optional, hidden on small screens) */}
-                <div className="w-80 bg-slate-800 border-l border-slate-700 hidden lg:flex flex-col p-6">
-                    <div className="text-center mb-6">
-                        <div className="w-24 h-24 rounded-full bg-slate-700 mx-auto flex items-center justify-center text-3xl font-bold text-slate-500 mb-4">
+                {/* Info Sidebar */}
+                <div className="w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 hidden lg:flex flex-col p-6 transition-colors">
+                    <div className="flex flex-col items-center mb-8">
+                        <div className="w-24 h-24 rounded-full bg-indigo-100 dark:bg-slate-700 flex items-center justify-center text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-4">
                             {client.name.charAt(0)}
                         </div>
-                        <h2 className="text-xl font-bold text-white">{client.name}</h2>
-                        <p className="text-slate-400 text-sm">{client.organizationName}</p>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white text-center">{client.name}</h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm text-center">{client.organizationName}</p> {/* Changed client.role to client.organizationName */}
                     </div>
 
                     <div className="space-y-6">
                         <div>
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Detalhes do Contato</h4>
+                            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Informações de Contato</h4>
                             <div className="space-y-3">
-                                <div className="flex items-center text-sm text-slate-300">
-                                    <Mail className="mr-3 text-indigo-400" size={16} />
-                                    {client.email || 'N/A'}
+                                <div className="flex items-center text-slate-600 dark:text-slate-300">
+                                    <Mail size={16} className="mr-3 text-slate-400" />
+                                    <span className="text-sm">{client.email || '-'}</span>
                                 </div>
-                                <div className="flex items-center text-sm text-slate-300">
-                                    <Phone className="mr-3 text-indigo-400" size={16} />
-                                    {client.phone || 'N/A'}
+                                <div className="flex items-center text-slate-600 dark:text-slate-300">
+                                    <Phone size={16} className="mr-3 text-slate-400" />
+                                    <span className="text-sm">{client.phone || '-'}</span>
+                                </div>
+                                <div className="flex items-center text-slate-600 dark:text-slate-300">
+                                    <Building size={16} className="mr-3 text-slate-400" />
+                                    <span className="text-sm">{client.organizationName || '-'}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-                            <h4 className="text-yellow-500 font-bold text-sm mb-2">Integração WhatsApp</h4>
-                            <p className="text-xs text-yellow-200/80 leading-relaxed">
-                                Esta é uma interface de demonstração.
-                                Para conectar ao WhatsApp real:
-                                <br />1. Configure a conta Meta Business.
-                                <br />2. Conecte o webhook ao backend.
+                        <div>
+                            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Sobre o WhatsApp</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                As mensagens enviadas por aqui são integradas via API oficial. O cliente receberá no WhatsApp dele como se fosse uma mensagem normal.
                             </p>
                         </div>
                     </div>
@@ -336,8 +325,5 @@ const ClientChat: React.FC<ClientChatProps> = ({ client, currentUser, companyId,
         </div>
     );
 };
-
-// Start Helper Import Fix
-import { Mail } from 'lucide-react';
 
 export default ClientChat;

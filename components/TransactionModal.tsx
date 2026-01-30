@@ -89,14 +89,14 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-slate-800 rounded-2xl w-full max-w-lg border border-slate-700 shadow-2xl animate-fade-in-up">
-                <div className="flex justify-between items-center p-6 border-b border-slate-700 bg-slate-900/50 rounded-t-2xl">
-                    <h3 className="text-xl font-bold text-white flex items-center">
+        <div className="fixed inset-0 bg-black/70 dark:bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700 shadow-2xl animate-fade-in-up transition-colors">
+                <div className="flex justify-between items-center p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-t-2xl transition-colors">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center transition-colors">
                         {transaction ? <Save size={20} className="mr-2 text-indigo-400" /> : <DollarSign size={20} className="mr-2 text-emerald-400" />}
                         {transaction ? 'Editar Transação' : 'Nova Transação'}
                     </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition-colors">
+                    <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -110,7 +110,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
                             onClick={() => setType('INCOME')}
                             className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all ${type === 'INCOME'
                                 ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                                : 'bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-600'
+                                : 'bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-500 hover:border-slate-400 dark:hover:border-slate-600'
                                 }`}
                         >
                             <ArrowUpCircle size={20} className="mr-2" /> Receita
@@ -120,7 +120,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
                             onClick={() => setType('EXPENSE')}
                             className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all ${type === 'EXPENSE'
                                 ? 'bg-red-500/20 border-red-500 text-red-400'
-                                : 'bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-600'
+                                : 'bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-500 hover:border-slate-400 dark:hover:border-slate-600'
                                 }`}
                         >
                             <ArrowDownCircle size={20} className="mr-2" /> Despesa
@@ -129,14 +129,14 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
 
                     {/* Description */}
                     <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Descrição</label>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 transition-colors">Descrição</label>
                         <div className="relative">
-                            <FileText className="absolute left-3 top-3 text-slate-500" size={18} />
+                            <FileText className="absolute left-3 top-3 text-slate-400 dark:text-slate-500" size={18} />
                             <input
                                 type="text"
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                 placeholder="Ex: Pagamento de Site"
                                 required
                             />
@@ -146,14 +146,14 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
                     <div className="grid grid-cols-2 gap-5">
                         {/* Amount */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Valor (R$)</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 transition-colors">Valor (R$)</label>
                             <div className="relative">
-                                <DollarSign className="absolute left-3 top-3 text-slate-500" size={18} />
+                                <DollarSign className="absolute left-3 top-3 text-slate-400 dark:text-slate-500" size={18} />
                                 <input
                                     type="text"
                                     value={amount}
                                     onChange={e => setAmount(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                     placeholder="0,00"
                                     required
                                 />
@@ -162,14 +162,14 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
 
                         {/* Date */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Data</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 transition-colors">Data</label>
                             <div className="relative">
-                                <Calendar className="absolute left-3 top-3 text-slate-500" size={18} />
+                                <Calendar className="absolute left-3 top-3 text-slate-400 dark:text-slate-500" size={18} />
                                 <input
                                     type="date"
                                     value={date}
                                     onChange={e => setDate(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:[color-scheme:dark]"
                                     required
                                 />
                             </div>
@@ -179,13 +179,13 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
                     <div className="grid grid-cols-2 gap-5">
                         {/* Category */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Categoria</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 transition-colors">Categoria</label>
                             <div className="relative">
-                                <Tag className="absolute left-3 top-3 text-slate-500" size={18} />
+                                <Tag className="absolute left-3 top-3 text-slate-400 dark:text-slate-500" size={18} />
                                 <select
                                     value={category}
                                     onChange={e => setCategory(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none"
+                                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none"
                                     required
                                 >
                                     <option value="" disabled>Selecione...</option>
@@ -202,12 +202,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
 
                         {/* Status */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label>
-                            <div className="grid grid-cols-3 bg-slate-900 rounded-lg p-1 border border-slate-600 gap-1">
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 transition-colors">Status</label>
+                            <div className="grid grid-cols-3 bg-slate-100 dark:bg-slate-900 rounded-lg p-1 border border-slate-300 dark:border-slate-600 gap-1 transition-colors">
                                 <button
                                     type="button"
                                     onClick={() => setStatus('PAID')}
-                                    className={`flex-1 flex items-center justify-center py-1.5 rounded-md text-sm font-medium transition-all ${status === 'PAID' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                                    className={`flex-1 flex items-center justify-center py-1.5 rounded-md text-sm font-medium transition-all ${status === 'PAID' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                         }`}
                                 >
                                     <CheckCircle size={14} className="mr-1.5" /> Pago
@@ -215,7 +215,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
                                 <button
                                     type="button"
                                     onClick={() => setStatus('PENDING')}
-                                    className={`flex-1 flex items-center justify-center py-1.5 rounded-md text-sm font-medium transition-all ${status === 'PENDING' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                                    className={`flex-1 flex items-center justify-center py-1.5 rounded-md text-sm font-medium transition-all ${status === 'PENDING' ? 'bg-amber-600 text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                         }`}
                                 >
                                     <Clock size={14} className="mr-1.5" /> Pendente
@@ -223,7 +223,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
                                 <button
                                     type="button"
                                     onClick={() => setStatus('OVERDUE')}
-                                    className={`flex-1 flex items-center justify-center py-1.5 rounded-md text-sm font-medium transition-all ${status === 'OVERDUE' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                                    className={`flex-1 flex items-center justify-center py-1.5 rounded-md text-sm font-medium transition-all ${status === 'OVERDUE' ? 'bg-red-600 text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                         }`}
                                 >
                                     <AlertTriangle size={14} className="mr-1.5" /> Atrasado
@@ -232,11 +232,11 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, co
                         </div>
                     </div>
 
-                    <div className="pt-4 flex justify-end gap-3 border-t border-slate-700 mt-2">
+                    <div className="pt-4 flex justify-end gap-3 border-t border-slate-200 dark:border-slate-700 mt-2 transition-colors">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                            className="px-5 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                         >
                             Cancelar
                         </button>

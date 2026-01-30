@@ -87,12 +87,12 @@ const PipelineBoard: React.FC<PipelineBoardProps> = ({ currentUser, companyId })
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-900">
+        <div className="flex flex-col h-full bg-gray-50 dark:bg-slate-900 transition-colors">
             {/* ACTION BAR */}
-            <div className="p-4 bg-slate-800 border-b border-slate-700 flex justify-end">
+            <div className="p-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex justify-end transition-colors">
                 <button
                     onClick={() => { setFormData({ stageId: 'PROSPECT', status: 'OPEN' }); setShowModal(true); }}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg flex items-center shadow-lg font-bold"
+                    className="bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-500 text-white px-4 py-2 rounded-lg flex items-center shadow-lg font-bold transition-colors"
                 >
                     <Plus size={18} className="mr-2" />
                     Novo Negócio
@@ -105,15 +105,15 @@ const PipelineBoard: React.FC<PipelineBoardProps> = ({ currentUser, companyId })
                     {STAGES.map(stage => (
                         <div
                             key={stage.id}
-                            className="w-80 flex-col flex h-full rounded-xl bg-slate-800/30 border border-slate-700/50"
+                            className="w-80 flex-col flex h-full rounded-xl bg-gray-100 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 transition-colors"
                             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                             onDrop={(e) => handleDrop(e, stage.id)}
                         >
                             {/* HEADER */}
-                            <div className={`p-3 border-t-4 ${stage.color} bg-slate-800 rounded-t-xl`}>
+                            <div className={`p-3 border-t-4 ${stage.color} bg-white dark:bg-slate-800 rounded-t-xl transition-colors`}>
                                 <div className="flex justify-between items-center mb-1">
-                                    <h3 className="font-bold text-slate-200">{stage.title}</h3>
-                                    <span className="bg-slate-700 text-slate-400 text-xs px-2 py-0.5 rounded-full">{deals.filter(d => d.stageId === stage.id).length}</span>
+                                    <h3 className="font-bold text-slate-800 dark:text-slate-200">{stage.title}</h3>
+                                    <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs px-2 py-0.5 rounded-full">{deals.filter(d => d.stageId === stage.id).length}</span>
                                 </div>
                                 <div className="text-xs text-slate-500 font-mono">
                                     Total: R$ {getStageTotal(stage.id).toLocaleString('pt-BR')}
@@ -130,25 +130,25 @@ const PipelineBoard: React.FC<PipelineBoardProps> = ({ currentUser, companyId })
                                             draggable
                                             onDragStart={(e) => handleDragStart(e, deal.id)}
                                             onClick={() => { setFormData(deal); setShowModal(true); }}
-                                            className="bg-slate-700 p-3 rounded-lg shadow-sm border border-slate-600 hover:border-indigo-500 cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+                                            className="bg-white dark:bg-slate-700 p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 hover:border-indigo-500 cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
                                         >
                                             <div className="flex justify-between items-start mb-2">
-                                                <span className="text-sm font-bold text-white line-clamp-2">{deal.title}</span>
+                                                <span className="text-sm font-bold text-slate-800 dark:text-white line-clamp-2">{deal.title}</span>
                                             </div>
 
                                             {client && (
-                                                <div className="text-xs text-slate-400 mb-2 truncate">
+                                                <div className="text-xs text-slate-500 dark:text-slate-400 mb-2 truncate">
                                                     {client.name} {client.organizationName ? `(${client.organizationName})` : ''}
                                                 </div>
                                             )}
 
-                                            <div className="flex items-center justify-between pt-2 border-t border-slate-600/50">
-                                                <span className="text-emerald-400 font-bold text-sm">
+                                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-600/50">
+                                                <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">
                                                     R$ {deal.value.toLocaleString('pt-BR')}
                                                 </span>
                                                 {deal.expectedCloseDate && (
-                                                    <div className="flex items-center text-[10px] text-slate-500" title="Previsão de fechamento">
-                                                        <Calendar size={10} className="mr-1 text-white" />
+                                                    <div className="flex items-center text-[10px] text-slate-400 dark:text-slate-500" title="Previsão de fechamento">
+                                                        <Calendar size={10} className="mr-1 text-slate-500 dark:text-white" />
                                                         {new Date(deal.expectedCloseDate).toLocaleDateString()}
                                                     </div>
                                                 )}
@@ -165,21 +165,21 @@ const PipelineBoard: React.FC<PipelineBoardProps> = ({ currentUser, companyId })
             {/* MODAL */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-700 shadow-2xl animate-fade-in-up">
-                        <h3 className="text-xl font-bold text-white mb-6">{formData.id ? 'Editar Negócio' : 'Novo Negócio'}</h3>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-200 dark:border-slate-700 shadow-2xl animate-fade-in-up transition-colors">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">{formData.id ? 'Editar Negócio' : 'Novo Negócio'}</h3>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Título do Negócio *</label>
-                                <input type="text" value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white outline-none focus:border-indigo-500" placeholder="Ex: Contrato Anual Desenvolvimento" />
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Título do Negócio *</label>
+                                <input type="text" value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-colors" placeholder="Ex: Contrato Anual Desenvolvimento" />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Cliente *</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Cliente *</label>
                                 <select
                                     value={formData.clientId || ''}
                                     onChange={e => setFormData({ ...formData, clientId: e.target.value })}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white outline-none focus:border-indigo-500"
+                                    className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-colors"
                                 >
                                     <option value="">Selecione um cliente...</option>
                                     {clients.map(c => (
@@ -190,21 +190,21 @@ const PipelineBoard: React.FC<PipelineBoardProps> = ({ currentUser, companyId })
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Valor (R$) *</label>
-                                    <input type="number" value={formData.value || ''} onChange={e => setFormData({ ...formData, value: Number(e.target.value) })} className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white outline-none focus:border-indigo-500" />
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Valor (R$) *</label>
+                                    <input type="number" value={formData.value || ''} onChange={e => setFormData({ ...formData, value: Number(e.target.value) })} className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-colors" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Previsão Fechamento</label>
-                                    <input type="date" value={formData.expectedCloseDate || ''} onChange={e => setFormData({ ...formData, expectedCloseDate: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white outline-none focus:border-indigo-500" />
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Previsão Fechamento</label>
+                                    <input type="date" value={formData.expectedCloseDate || ''} onChange={e => setFormData({ ...formData, expectedCloseDate: e.target.value })} className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-colors dark:[color-scheme:dark]" />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Etapa do Funil</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Etapa do Funil</label>
                                 <select
                                     value={formData.stageId || 'PROSPECT'}
                                     onChange={e => setFormData({ ...formData, stageId: e.target.value })}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white outline-none focus:border-indigo-500"
+                                    className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-colors"
                                 >
                                     {STAGES.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                                 </select>
@@ -218,11 +218,11 @@ const PipelineBoard: React.FC<PipelineBoardProps> = ({ currentUser, companyId })
                                         await crmService.deleteDeal(formData.id!);
                                         setShowModal(false);
                                     }
-                                }} className="text-red-400 hover:text-red-300 text-sm">Excluir</button>
+                                }} className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm">Excluir</button>
                             )}
                             <div className="flex space-x-3 ml-auto">
-                                <button onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-300 hover:text-white">Cancelar</button>
-                                <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold shadow-lg">Salvar</button>
+                                <button onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">Cancelar</button>
+                                <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold shadow-lg transition-colors">Salvar</button>
                             </div>
                         </div>
                     </div>

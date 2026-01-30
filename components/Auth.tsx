@@ -157,8 +157,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-2 sm:p-4">
-      <div className="bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700 max-h-screen overflow-y-auto">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-2 sm:p-4 transition-colors">
+      <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700 max-h-screen overflow-y-auto transition-colors">
 
         {/* Header */}
         <div className="flex justify-center mb-3">
@@ -167,22 +167,22 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-center text-white mb-1">PartnerSync</h1>
-        <p className="text-center text-slate-400 text-sm mb-4">
+        <h1 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-1 transition-colors">PartnerSync</h1>
+        <p className="text-center text-slate-600 dark:text-slate-400 text-sm mb-4 transition-colors">
           {isRegistering ? 'Crie sua conta para começar' : 'Entre para acessar seus projetos'}
         </p>
 
         {/* Tabs */}
-        <div className="flex bg-slate-900 p-1 rounded-lg mb-4">
+        <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg mb-4 transition-colors">
           <button
             onClick={() => { setIsRegistering(false); setError(''); }}
-            className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${!isRegistering ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+            className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${!isRegistering ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
           >
             Entrar
           </button>
           <button
             onClick={() => { setIsRegistering(true); setError(''); }}
-            className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${isRegistering ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+            className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${isRegistering ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
           >
             Cadastrar
           </button>
@@ -193,23 +193,23 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           {isRegistering && (
             <>
               <div className="relative">
-                <UserIcon size={16} className="absolute left-3 top-2.5 text-slate-500" />
+                <UserIcon size={16} className="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500" />
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                   placeholder="Nome de Usuário"
                   required={isRegistering}
                 />
               </div>
               <div className="relative">
-                <Phone size={16} className="absolute left-3 top-2.5 text-slate-500" />
+                <Phone size={16} className="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500" />
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                   placeholder="Telefone / WhatsApp"
                   required={isRegistering}
                 />
@@ -218,34 +218,34 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           )}
 
           <div className="relative">
-            <Mail size={16} className="absolute left-3 top-2.5 text-slate-500" />
+            <Mail size={16} className="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500" />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               placeholder="Email"
               required
             />
           </div>
 
-          <div className="flex items-center space-x-2 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2">
-            <Lock size={16} className="text-slate-500" />
+          <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 transition-colors">
+            <Lock size={16} className="text-slate-400 dark:text-slate-500" />
             <input
               type="password"
               placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none flex-1"
+              className="bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none flex-1"
               required
             />
           </div>
 
           {/* Create vs Join Toggle (Only for Registration) */}
           {isRegistering && (
-            <div className="p-3 border border-slate-700 rounded-lg bg-slate-800/50">
+            <div className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-slate-300 text-sm font-medium">Possui um código de convite?</span>
+                <span className="text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">Possui um código de convite?</span>
                 <button
                   type="button"
                   onClick={() => { setIsJoining(!isJoining); setInviteCode(''); }}
@@ -257,18 +257,18 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
               {isJoining && (
                 <div className="animate-fade-in mt-2">
-                  <div className="flex items-center space-x-2 bg-slate-900 border border-indigo-500/50 rounded-lg p-3">
+                  <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-900 border border-indigo-400 dark:border-indigo-500/50 rounded-lg p-3 transition-colors">
                     <Copy size={18} className="text-indigo-400" />
                     <input
                       type="text"
                       placeholder="Código da Empresa (ex: A1B2C3)"
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                      className="bg-transparent text-white placeholder-slate-500 focus:outline-none flex-1 uppercase tracking-wider font-mono"
+                      className="bg-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none flex-1 uppercase tracking-wider font-mono"
                       maxLength={6}
                     />
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">Peça o código ao administrador da empresa.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">Peça o código ao administrador da empresa.</p>
                 </div>
               )}
             </div>
@@ -282,18 +282,18 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
               </div>
               {error.includes('DOMÍNIO BLOQUEADO') && (
                 <div className="ml-7 mt-2">
-                  <p className="text-xs text-slate-400 mb-2">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 transition-colors">
                     Copie o endereço acima e adicione em:<br />
-                    <span className="font-mono bg-slate-900 px-1 rounded">Firebase Console &gt; Authentication &gt; Settings &gt; Authorized Domains</span>
+                    <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1 rounded transition-colors">Firebase Console &gt; Authentication &gt; Settings &gt; Authorized Domains</span>
                   </p>
                 </div>
               )}
               {error.includes('ERRO DE PERMISSÃO') && (
                 <div className="ml-7 mt-2">
-                  <p className="text-xs text-slate-400 mb-2">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 transition-colors">
                     Vá no <strong>Firebase Console &gt; Firestore Database &gt; Rules</strong> e altere para:
                   </p>
-                  <pre className="bg-slate-900 p-2 rounded text-[10px] text-slate-300 overflow-x-auto select-all">
+                  <pre className="bg-slate-100 dark:bg-slate-900 p-2 rounded text-[10px] text-slate-700 dark:text-slate-300 overflow-x-auto select-all transition-colors">
                     {`rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -324,9 +324,9 @@ service cloud.firestore {
           </button>
 
           <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-slate-700"></div>
-            <span className="flex-shrink-0 mx-3 text-slate-500 text-xs">OU</span>
-            <div className="flex-grow border-t border-slate-700"></div>
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-700 transition-colors"></div>
+            <span className="flex-shrink-0 mx-3 text-slate-400 dark:text-slate-500 text-xs transition-colors">OU</span>
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-700 transition-colors"></div>
           </div>
 
           <button
@@ -340,7 +340,7 @@ service cloud.firestore {
           </button>
         </form>
 
-        <p className="mt-3 text-center text-xs text-slate-500">
+        <p className="mt-3 text-center text-xs text-slate-500 dark:text-slate-500 transition-colors">
           Sistema online sincronizado via Firebase.
         </p>
       </div>

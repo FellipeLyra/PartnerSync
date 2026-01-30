@@ -122,29 +122,29 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
     <div className="p-8 h-full overflow-y-auto">
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Bater Ponto</h2>
-          <p className="text-slate-400">Gerencie seus horários. A meta é começar às 08:00 em ponto.</p>
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 transition-colors">Bater Ponto</h2>
+          <p className="text-slate-600 dark:text-slate-400 transition-colors">Gerencie seus horários. A meta é começar às 08:00 em ponto.</p>
         </div>
       </header>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 flex items-center shadow-lg">
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center shadow-lg transition-colors">
           <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 mr-4">
             <AlertTriangle size={24} />
           </div>
           <div>
-            <p className="text-slate-400 text-sm font-medium uppercase">Seus Atrasos</p>
-            <p className="text-3xl font-bold text-white">{totalLateDays} <span className="text-sm text-slate-500 font-normal">dias</span></p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium uppercase transition-colors">Seus Atrasos</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white transition-colors">{totalLateDays} <span className="text-sm text-slate-500 dark:text-slate-500 font-normal">dias</span></p>
           </div>
         </div>
-        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 flex items-center shadow-lg">
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center shadow-lg transition-colors">
           <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 mr-4">
             <TrendingUp size={24} />
           </div>
           <div>
-            <p className="text-slate-400 text-sm font-medium uppercase">Sua Média de Atraso</p>
-            <p className="text-3xl font-bold text-white">{averageDelay} <span className="text-sm text-slate-500 font-normal">minutos</span></p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium uppercase transition-colors">Sua Média de Atraso</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white transition-colors">{averageDelay} <span className="text-sm text-slate-500 dark:text-slate-500 font-normal">minutos</span></p>
           </div>
         </div>
       </div>
@@ -152,19 +152,22 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-8">
           {/* Clock Card */}
-          <div className="bg-slate-800 rounded-2xl p-8 shadow-xl flex flex-col items-center justify-center border border-slate-700 relative overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-xl flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700 relative overflow-hidden transition-colors">
             <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-            <div className="text-6xl font-mono font-bold text-white mb-4 tracking-wider">
+            <div className="text-6xl font-mono font-bold text-slate-900 dark:text-white mb-4 tracking-wider transition-colors">
               {currentTime.toLocaleTimeString('pt-BR')}
             </div>
-            <div className="text-slate-400 text-lg mb-8 uppercase tracking-widest font-medium">
-              {currentTime.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </div>
+            <div className="text-slate-600 dark:text-slate-400 text-lg mb-8 uppercase tracking-widest font-medium transition-colors">
+              {currentTime.toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long'
+              })}  </div>
 
             {!todayEntry ? (
               <button
                 onClick={() => handleClockAction('IN')}
-                className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-emerald-600 rounded-full hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 focus:ring-offset-slate-800 shadow-lg shadow-emerald-900/50"
+                className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-emerald-600 rounded-full hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 focus:ring-offset-white dark:focus:ring-offset-slate-800 shadow-lg shadow-emerald-500/30 dark:shadow-emerald-900/50"
               >
                 <Clock className="mr-2 -ml-1 h-6 w-6 group-hover:animate-pulse" />
                 REGISTRAR ENTRADA
@@ -177,7 +180,7 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
                 </div>
                 <button
                   onClick={() => handleClockAction('OUT')}
-                  className="w-full px-8 py-4 bg-slate-700 text-slate-300 hover:bg-slate-600 rounded-xl font-medium transition-colors border border-slate-600 hover:text-white"
+                  className="w-full px-8 py-4 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-xl font-medium transition-colors border border-slate-300 dark:border-slate-600 hover:text-slate-900 dark:hover:text-white"
                 >
                   Registrar Saída (Fim do Dia)
                 </button>
@@ -186,8 +189,8 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
           </div>
 
           {/* Weekly Status */}
-          <div className="bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-200 dark:border-slate-700 transition-colors">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center transition-colors">
               <Calendar className="mr-2 text-indigo-400" size={20} />
               Sua Meta Semanal (Seg-Sex)
             </h3>
@@ -196,8 +199,8 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
                 const status = getStatusForDay(day);
                 const dayName = day.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3);
 
-                let bgClass = 'bg-slate-700/50 border-slate-600';
-                let textClass = 'text-slate-400';
+                let bgClass = 'bg-slate-100 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600';
+                let textClass = 'text-slate-400 dark:text-slate-400';
                 let icon = null;
 
                 if (status === 'OK') {
@@ -228,19 +231,19 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
 
           {/* Team Status (New Section) */}
           {partnerEntries.length > 0 && (
-            <div className="bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-200 dark:border-slate-700 transition-colors">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center transition-colors">
                 <Users className="mr-2 text-blue-400" size={20} />
                 Status da Equipe (Hoje)
               </h3>
               <div className="space-y-3">
                 {partnerEntries.map((p, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-700">
+                  <div key={idx} className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold">
+                      <div className="w-8 h-8 bg-slate-300 dark:bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-slate-700 dark:text-white transition-colors">
                         {p.username.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium text-slate-300">{p.username}</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300 transition-colors">{p.username}</span>
                     </div>
                     <div>
                       {p.lastEntry ? (
@@ -256,7 +259,7 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
                           )}
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-500 italic">Ainda não chegou</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-500 italic">Ainda não chegou</span>
                       )}
                     </div>
                   </div>
@@ -267,14 +270,14 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
         </div>
 
         {/* History List */}
-        <div className="bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700 overflow-hidden flex flex-col">
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col transition-colors">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center justify-between transition-colors">
             <span className="flex items-center"><History className="mr-2 text-indigo-400" /> Histórico Completo</span>
-            <span className="text-xs font-normal text-slate-500">Últimos registros</span>
+            <span className="text-xs font-normal text-slate-500 dark:text-slate-500">Últimos registros</span>
           </h3>
           <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
             {entries.length === 0 && (
-              <p className="text-slate-500 text-center py-8">Nenhum registro encontrado.</p>
+              <p className="text-slate-500 dark:text-slate-500 text-center py-8 transition-colors">Nenhum registro encontrado.</p>
             )}
             {entries.map((entry) => {
               const date = new Date(entry.timestamp);
@@ -284,7 +287,7 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
               return (
                 <div
                   key={entry.id}
-                  className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${isMe ? 'bg-slate-700/50 border-slate-700/50 hover:bg-slate-700' : 'bg-slate-800/80 border-slate-700/30 opacity-75 hover:opacity-100'}`}
+                  className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${isMe ? 'bg-slate-100 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700' : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/30 opacity-75 hover:opacity-100'}`}
                 >
                   <div className="flex items-center space-x-3">
                     <div
@@ -296,29 +299,32 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
                         }`}
                     />
                     <div>
-                      <p className="font-semibold text-slate-200 flex items-center">
+                      <p className="font-semibold text-slate-900 dark:text-slate-200 flex items-center transition-colors">
                         {entry.username}
-                        {isMe && <span className="ml-2 text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono">VOCÊ</span>}
+                        {isMe && <span className="ml-2 text-[10px] bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-1.5 py-0.5 rounded font-mono">VOCÊ</span>}
                         {entry.type === 'IN' && entry.isLate && (
-                          <span className="ml-2 text-[10px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded font-mono">
+                          <span className="ml-2 text-[10px] bg-red-500/20 text-red-600 dark:text-red-300 px-1.5 py-0.5 rounded font-mono">
                             +{delay}m
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-slate-400">
-                        {date.toLocaleDateString('pt-BR')} &bull; {entry.type === 'IN' ? 'Entrada' : 'Saída'}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors">
+                        {date.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-mono font-medium text-slate-200">
+                    <p className="text-lg font-bold text-slate-900 dark:text-white transition-colors">
                       {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                     </p>
-                    {entry.type === 'IN' && (
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${entry.isLate ? 'text-red-400' : 'text-emerald-400'}`}>
-                        {entry.isLate ? 'ATRASADO' : 'PONTUAL'}
-                      </span>
-                    )}
+                    <p className={`text-xs font-bold uppercase ${entry.type === 'IN'
+                      ? entry.isLate
+                        ? 'text-red-400'
+                        : 'text-emerald-400'
+                      : 'text-slate-500'
+                      }`}>
+                      {entry.type === 'IN' ? (entry.isLate ? 'ATRASADO' : 'PONTUAL') : 'SAÍDA'}
+                    </p>
                   </div>
                 </div>
               );

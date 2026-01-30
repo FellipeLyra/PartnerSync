@@ -479,13 +479,13 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
 
         return (
             <div
-                className="flex flex-col h-full bg-slate-800/50 rounded-xl border border-slate-700/50 transition-colors"
+                className="flex flex-col h-full bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-colors"
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDropOnColumn(e, status)}
             >
-                <div className={`p-4 border-b border-slate-700 flex items-center justify-between ${colorClass} bg-opacity-10 rounded-t-xl`}>
+                <div className={`p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between ${colorClass} bg-opacity-10 rounded-t-xl transition-colors`}>
                     <h3 className={`font-bold ${colorClass}`}>{title}</h3>
-                    <span className="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">{tasks.length}</span>
+                    <span className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2 py-1 rounded-full transition-colors">{tasks.length}</span>
                 </div>
 
                 <div className="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px]">
@@ -498,7 +498,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                 onDrop={(e) => handleDropOnCard(e, task.id, status)}
                                 onDragOver={handleDragOver}
                                 onClick={() => openTaskModal(task)}
-                                className="bg-slate-700 p-4 pt-6 rounded-lg shadow-sm border border-slate-600 hover:border-indigo-500 transition-all group hover:shadow-lg relative cursor-default mb-3"
+                                className="bg-white dark:bg-slate-700 p-4 pt-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all group hover:shadow-lg relative cursor-default mb-3"
                             >
                                 {/* DRAG HANDLE - Separated from buttons, high z-index but lower than buttons */}
                                 <div
@@ -527,7 +527,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                     </button>
                                 </div>
 
-                                <p className="text-slate-200 font-medium text-sm mb-2 mt-1">{task.content}</p>
+                                <p className="text-slate-900 dark:text-slate-200 font-medium text-sm mb-2 mt-1 transition-colors">{task.content}</p>
 
                                 {/* Visual Indicators */}
                                 <div className="flex flex-wrap gap-2 mb-2">
@@ -541,7 +541,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
 
                                 {/* Media Preview (Small) */}
                                 {task.mediaUrl && (
-                                    <div className="mb-3 rounded-lg overflow-hidden border border-slate-600 max-h-32">
+                                    <div className="mb-3 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 max-h-32 transition-colors">
                                         {task.mediaUrl.match(/\.(mp4|webm)$/i) ? (
                                             <video src={task.mediaUrl} className="w-full h-full object-cover opacity-80" muted />
                                         ) : (
@@ -551,8 +551,8 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                 )}
 
                                 {/* Footer Info */}
-                                <div className="flex items-center justify-between pt-2 border-t border-slate-600/50 relative z-20">
-                                    <div className={`flex items-center text-xs ${isOverdue ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
+                                <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-600/50 relative z-20 transition-colors">
+                                    <div className={`flex items-center text-xs ${isOverdue ? 'text-red-400 font-bold' : 'text-slate-600 dark:text-slate-400'} transition-colors`}>
                                         <Calendar size={12} className="mr-1" />
                                         {task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR') : 'Sem prazo'}
                                     </div>
@@ -560,7 +560,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                     {/* Fixed Delete Button */}
                                     <button
                                         type="button"
-                                        className="text-slate-500 hover:text-red-400 hover:bg-slate-600/50 p-1.5 rounded transition-colors cursor-pointer"
+                                        className="text-slate-500 dark:text-slate-500 hover:text-red-400 hover:bg-slate-200 dark:hover:bg-slate-600/50 p-1.5 rounded transition-colors cursor-pointer"
                                         onMouseDown={(e) => {
                                             e.stopPropagation(); // Stops drag interference
                                         }}
@@ -591,13 +591,13 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
     };
 
     return (
-        <div className="flex h-full flex-col relative overflow-hidden">
+        <div className="flex h-full flex-col relative overflow-hidden bg-white dark:bg-slate-900 transition-colors">
             {/* Header */}
-            <header className="px-6 py-4 border-b border-slate-700 bg-slate-800 flex items-center justify-between flex-shrink-0">
+            <header className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex items-center justify-between flex-shrink-0 transition-colors">
                 <div className="flex items-center space-x-3">
                     <List className="text-indigo-400" />
                     <select
-                        className="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 min-w-[200px]"
+                        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 min-w-[200px] transition-colors"
                         value={activeProjectId}
                         onChange={(e) => {
                             setActiveProjectId(e.target.value);
@@ -616,7 +616,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                             setShowAddColumnModal(true);
                         }}
                         disabled={!activeProjectId}
-                        className="p-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded-lg transition-colors disabled:opacity-50"
+                        className="p-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors disabled:opacity-50"
                         title="Adicionar Coluna"
                     >
                         <Columns size={18} />
@@ -626,7 +626,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                         type="button"
                         onClick={openEditProjectModal}
                         disabled={!activeProjectId}
-                        className="p-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded-lg transition-colors disabled:opacity-50"
+                        className="p-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors disabled:opacity-50"
                         title="Configurações do Projeto"
                     >
                         <Settings size={18} />
@@ -638,7 +638,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                         type="button"
                         onClick={() => setShowProjectChat(!showProjectChat)}
                         disabled={!activeProjectId}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${showProjectChat ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${showProjectChat ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}
                         title="Chat do Projeto"
                     >
                         <MessageSquare size={16} />
@@ -661,7 +661,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                 {activeProject ? (
                     <div className="flex-1 flex flex-col p-6 overflow-hidden">
                         <div className="mb-2 px-1 flex-shrink-0">
-                            <p className="text-slate-400 text-sm italic truncate">{activeProject.description}</p>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm italic truncate transition-colors">{activeProject.description}</p>
                         </div>
                         <div className="flex-1 overflow-x-auto min-h-0 custom-scrollbar pb-4">
                             <div className="flex space-x-6 h-full min-w-max">
@@ -682,24 +682,24 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                         }}
                                     >
                                         {/* Column Header */}
-                                        <div className={`p-4 border-b border-slate-700 flex items-center justify-between ${col.colorClass} bg-slate-800/80 rounded-t-xl cursor-grab active:cursor-grabbing`}>
+                                        <div className={`p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between ${col.colorClass} bg-slate-100 dark:bg-slate-800/80 rounded-t-xl cursor-grab active:cursor-grabbing transition-colors`}>
                                             <div className='flex items-center space-x-2'>
                                                 <GripHorizontal size={14} className="opacity-50" />
                                                 <h3 className={`font-bold`}>{col.title}</h3>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <span className="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">{activeProject.tasks.filter(t => t.status === col.id).length}</span>
-                                                <button onClick={(e) => { e.stopPropagation(); openEditColumnModal(col); }} className="text-slate-500 hover:text-white p-1 rounded hover:bg-slate-700">
+                                                <span className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2 py-1 rounded-full transition-colors">{activeProject.tasks.filter(t => t.status === col.id).length}</span>
+                                                <button onClick={(e) => { e.stopPropagation(); openEditColumnModal(col); }} className="text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                                                     <Edit2 size={14} />
                                                 </button>
-                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id) }} className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-slate-700">
+                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id) }} className="text-slate-500 dark:text-slate-500 hover:text-red-400 p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                                                     <X size={14} />
                                                 </button>
                                             </div>
                                         </div>
 
                                         {/* Column Body */}
-                                        <div className="flex-1 bg-slate-800/50 border-x border-b border-slate-700/50 rounded-b-xl p-3 overflow-y-auto space-y-3 custom-scrollbar">
+                                        <div className="flex-1 bg-slate-50 dark:bg-slate-800/50 border-x border-b border-slate-200 dark:border-slate-700/50 rounded-b-xl p-3 overflow-y-auto space-y-3 custom-scrollbar transition-colors">
                                             {activeProject.tasks.filter(t => t.status === col.id).map(task => {
                                                 const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== DEFAULT_STATUSES.DONE;
                                                 return (
@@ -708,7 +708,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                                         onDrop={(e) => { e.stopPropagation(); handleDropOnCard(e, task.id, col.id); }}
                                                         onDragOver={handleDragOver}
                                                         onClick={() => openTaskModal(task)}
-                                                        className="bg-slate-700 p-4 pt-6 rounded-lg shadow-sm border border-slate-600 hover:border-indigo-500 transition-all group hover:shadow-lg relative cursor-default mb-3"
+                                                        className="bg-white dark:bg-slate-700 p-4 pt-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all group hover:shadow-lg relative cursor-default mb-3"
                                                     >
                                                         {/* Task Card Content (Same as before) -- Copied Logic */}
                                                         <div
@@ -729,14 +729,14 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                                                 type="button"
                                                                 onMouseDown={(e) => e.stopPropagation()}
                                                                 onClick={(e) => { e.stopPropagation(); openTaskModal(task); }}
-                                                                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-600 transition-colors bg-slate-700/50"
+                                                                className="text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors bg-slate-100 dark:bg-slate-700/50"
                                                                 title="Editar"
                                                             >
                                                                 <Edit2 size={14} />
                                                             </button>
                                                         </div>
 
-                                                        <p className="text-slate-200 font-medium text-sm mb-2 mt-1">{task.content}</p>
+                                                        <p className="text-slate-900 dark:text-slate-200 font-medium text-sm mb-2 mt-1 transition-colors">{task.content}</p>
 
                                                         <div className="flex flex-wrap gap-2 mb-2">
                                                             {task.description && <div title="Possui descrição"><List size={14} className="text-slate-400" /></div>}
@@ -748,7 +748,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                                         </div>
 
                                                         {task.mediaUrl && (
-                                                            <div className="mb-3 rounded-lg overflow-hidden border border-slate-600 max-h-32">
+                                                            <div className="mb-3 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 max-h-32 transition-colors">
                                                                 {task.mediaUrl.match(/\.(mp4|webm)$/i) ? (
                                                                     <video src={task.mediaUrl} className="w-full h-full object-cover opacity-80" muted />
                                                                 ) : (
@@ -757,14 +757,14 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                                             </div>
                                                         )}
 
-                                                        <div className="flex items-center justify-between pt-2 border-t border-slate-600/50 relative z-20">
-                                                            <div className={`flex items-center text-xs ${isOverdue ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
+                                                        <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-600/50 relative z-20 transition-colors">
+                                                            <div className={`flex items-center text-xs ${isOverdue ? 'text-red-400 font-bold' : 'text-slate-600 dark:text-slate-400'} transition-colors`}>
                                                                 <Calendar size={12} className="mr-1" />
                                                                 {task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR') : 'Sem prazo'}
                                                             </div>
                                                             <button
                                                                 type="button"
-                                                                className="text-slate-500 hover:text-red-400 hover:bg-slate-600/50 p-1.5 rounded transition-colors cursor-pointer"
+                                                                className="text-slate-500 dark:text-slate-500 hover:text-red-400 hover:bg-slate-200 dark:hover:bg-slate-600/50 p-1.5 rounded transition-colors cursor-pointer"
                                                                 onMouseDown={(e) => e.stopPropagation()}
                                                                 onClick={(e) => {
                                                                     e.stopPropagation(); e.preventDefault(); handleDeleteTask(task.id);
@@ -781,7 +781,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                             <button
                                                 type="button"
                                                 onClick={() => openTaskModal(undefined, col.id)}
-                                                className="w-full py-2 border-2 border-dashed border-slate-700 rounded-lg text-slate-500 hover:text-indigo-400 hover:border-indigo-500/50 hover:bg-slate-700/30 transition-all flex items-center justify-center text-sm font-medium"
+                                                className="w-full py-2 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-500 hover:text-indigo-400 hover:border-indigo-500/50 hover:bg-slate-100 dark:hover:bg-slate-700/30 transition-all flex items-center justify-center text-sm font-medium"
                                             >
                                                 <Plus size={16} className="mr-2" /> Adicionar Card
                                             </button>
@@ -797,7 +797,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                             setNewColumnForm({ title: '', colorClass: 'text-indigo-400' });
                                             setShowAddColumnModal(true);
                                         }}
-                                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-600 rounded-xl hover:border-indigo-500 text-slate-500 hover:text-indigo-400"
+                                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl hover:border-indigo-500 text-slate-500 dark:text-slate-500 hover:text-indigo-400 transition-colors"
                                     >
                                         <Columns size={24} className="mb-2" />
                                         <span className="font-bold">Nova Coluna</span>
@@ -807,7 +807,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 transition-colors">
                         <FolderPlus size={48} className="mb-4 opacity-50" />
                         <p>Crie um projeto para começar</p>
                     </div>
@@ -835,14 +835,14 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
             {/* New Project Modal */}
             {showNewProjectModal && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 shadow-2xl animate-fade-in-up">
-                        <h3 className="text-xl font-bold text-white mb-4">Novo Projeto</h3>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-700 shadow-2xl animate-fade-in-up transition-colors">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 transition-colors">Novo Projeto</h3>
                         <input
                             type="text"
                             value={newProjectName}
                             onChange={(e) => setNewProjectName(e.target.value)}
                             placeholder="Nome do projeto..."
-                            className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white mb-6 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white mb-6 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
                             autoFocus
                         />
 
@@ -851,7 +851,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                             <button
                                 type="button"
                                 onClick={() => setShowNewProjectModal(false)}
-                                className="px-4 py-2 text-slate-300 hover:text-white"
+                                className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
                             >
                                 Cancelar
                             </button>
@@ -870,8 +870,8 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
             {/* Edit Project Modal */}
             {showEditProjectModal && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 shadow-2xl animate-fade-in-up">
-                        <h3 className="text-xl font-bold text-white mb-4">Configurações do Projeto</h3>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-700 shadow-2xl animate-fade-in-up transition-colors">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 transition-colors">Configurações do Projeto</h3>
 
                         <div className="space-y-4 mb-6">
                             <div>
@@ -1043,7 +1043,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
                                         type="date"
                                         value={taskForm.dueDate}
                                         onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                                        className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none dark:[color-scheme:dark]"
                                     />
                                 </div>
                             </div>

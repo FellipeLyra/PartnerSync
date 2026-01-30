@@ -46,78 +46,78 @@ const CRMSettings: React.FC<CRMSettingsProps> = ({ currentUser, onUpdateUser }) 
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-900 p-8 overflow-y-auto">
+        <div className="flex flex-col h-full bg-gray-50 dark:bg-slate-900 p-8 overflow-y-auto transition-colors">
             <div className="max-w-2xl mx-auto w-full">
-                <h2 className="text-2xl font-bold text-white mb-8">Configurações do Perfil</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">Configurações do Perfil</h2>
 
-                <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-lg">
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-lg transition-colors">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Avatar Display */}
                         <div className="flex items-center space-x-4 mb-6">
-                            <div className="w-20 h-20 rounded-full bg-slate-700 flex items-center justify-center border-2 border-indigo-500 overflow-hidden">
+                            <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center border-2 border-indigo-500 overflow-hidden">
                                 {currentUser.avatar ? (
                                     <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
                                 ) : (
-                                    <UserIcon size={40} className="text-slate-400" />
+                                    <UserIcon size={40} className="text-slate-400 dark:text-slate-500" />
                                 )}
                             </div>
                             <div>
-                                <p className="text-white font-bold text-lg">{currentUser.username}</p>
-                                <p className="text-slate-400 text-sm">role: {currentUser.role}</p>
+                                <p className="text-slate-900 dark:text-white font-bold text-lg">{currentUser.username}</p>
+                                <p className="text-slate-500 dark:text-slate-400 text-sm">role: {currentUser.role}</p>
                             </div>
                         </div>
 
                         {/* Fields */}
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Nome Completo</label>
+                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Nome Completo</label>
                                 <div className="relative">
-                                    <UserIcon size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500" />
+                                    <UserIcon size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                                     <input
                                         type="text"
                                         name="username"
                                         value={formData.username}
                                         onChange={handleChange}
-                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
+                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Email</label>
                                 <div className="relative">
-                                    <Mail size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500" />
+                                    <Mail size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                                     <input
                                         type="email"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">WhatsApp / Telefone</label>
+                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">WhatsApp / Telefone</label>
                                 <div className="relative">
-                                    <Phone size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500" />
+                                    <Phone size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                                     <input
                                         type="text"
                                         name="phone"
                                         value={formData.phone}
                                         onChange={handleChange}
                                         placeholder="(64) 99232-7984"
-                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
                                     />
                                 </div>
-                                <p className="text-xs text-slate-500 mt-1">Este número será usado para integrações futuras com WhatsApp.</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Este número será usado para integrações futuras com WhatsApp.</p>
                             </div>
                         </div>
 
                         {/* Submit */}
-                        <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
+                        <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center transition-colors">
                             {message && (
-                                <span className={`text-sm ${message.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                <span className={`text-sm ${message.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                                     {message.text}
                                 </span>
                             )}

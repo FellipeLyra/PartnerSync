@@ -3,6 +3,7 @@ import { Clock, KanbanSquare, MessageSquare, LogOut, Check, X, Camera, UserPlus,
 import { User, ViewState, Company } from '../types';
 import { storageService } from '../services/storageService';
 import AvatarEditor from './AvatarEditor';
+import { ThemeToggle } from './ThemeToggle';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -87,45 +88,43 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
   };
 
   return (
-    <div className="flex h-screen bg-slate-900 text-slate-100">
+    <div className="flex h-screen bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors">
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-800 border-r border-slate-700 flex flex-col">
-        <div className="p-6 border-b border-slate-700 flex items-center space-x-3">
-          <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-white">
-            PS
-          </div>
-          <h1 className="font-bold text-xl tracking-tight">PartnerSync</h1>
+      <aside className="w-64 bg-slate-100 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-colors">
+        {/* Logo */}
+        <div className="p-6 border-b border-slate-200 dark:border-slate-700 transition-colors">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white transition-colors">PartnerSync</h1>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        {/* Navigation - Scrollable */}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => onChangeView(item.id)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 relative ${currentView === item.id
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
-                : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${currentView === item.id
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 dark:shadow-indigo-900/50'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
                 }`}
             >
               <item.icon size={20} />
               <span className="font-medium">{item.label}</span>
-              {/* Unread Badge for Chat */}
               {item.id === 'CHAT' && unreadCount > 0 && (
-                <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {unreadCount > 99 ? '99+' : unreadCount}
+                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {unreadCount}
                 </span>
               )}
             </button>
           ))}
         </nav>
 
-        {/* User Profile & Invite */}
-        <div className="p-4 border-t border-slate-700 bg-slate-800/50 space-y-3">
+        {/* User Profile & Actions - Fixed at bottom */}
+        <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 space-y-3 flex-shrink-0 transition-colors">
           {/* Invite Button - Visible if company loaded */}
           {company && (
             <button
               onClick={() => setShowInviteModal(true)}
-              className="w-full flex items-center justify-center lg:justify-start p-2 rounded-lg hover:bg-slate-700 text-indigo-400 transition-colors"
+              className="w-full flex items-center justify-center lg:justify-start p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 transition-colors"
               title="Convidar Equipe"
             >
               <UserPlus size={20} />
@@ -134,7 +133,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
           )}
 
           {/* Debug Info */}
-          <div className="text-[10px] text-slate-500 hidden lg:block text-center lg:text-left">
+          <div className="text-[10px] text-slate-400 dark:text-slate-500 hidden lg:block text-center lg:text-left transition-colors">
             {company ? `Co: ${company.inviteCode}` : 'Loading...'}
           </div>
 
@@ -145,11 +144,11 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
               onClick={handleAvatarClick}
               title="Clique para alterar foto"
             >
-              <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden border-2 border-slate-500 group-hover:border-indigo-500 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center overflow-hidden border-2 border-slate-400 dark:border-slate-500 group-hover:border-indigo-500 transition-colors">
                 {currentUser.avatar ? (
                   <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <UserIcon size={24} className="text-slate-300" />
+                  <UserIcon size={24} className="text-slate-600 dark:text-slate-300" />
                 )}
               </div>
               {/* Overlay Icon */}
@@ -167,10 +166,14 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{currentUser.username}</p>
-              <p className="text-xs text-slate-400 truncate">Online</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white truncate transition-colors">{currentUser.username}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate transition-colors">Online</p>
             </div>
           </div>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           <button
             onClick={onLogout}
             className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"

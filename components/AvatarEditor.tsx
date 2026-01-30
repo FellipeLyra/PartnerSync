@@ -12,7 +12,7 @@ const AvatarEditor: React.FC<AvatarEditorProps> = ({ imageSrc, onSave, onCancel 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  
+
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -28,7 +28,7 @@ const AvatarEditor: React.FC<AvatarEditorProps> = ({ imageSrc, onSave, onCancel 
     if (!isDragging) return;
     const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
-    
+
     setPosition({
       x: clientX - dragStart.x,
       y: clientY - dragStart.y
@@ -52,8 +52,8 @@ const AvatarEditor: React.FC<AvatarEditorProps> = ({ imageSrc, onSave, onCancel 
     canvas.height = size;
 
     // The container is 250px x 250px in the UI
-    const containerSize = 250; 
-    
+    const containerSize = 250;
+
     // Logic to map the UI transformation to the Canvas
     // Center point
     const cx = canvas.width / 2;
@@ -71,7 +71,7 @@ const AvatarEditor: React.FC<AvatarEditorProps> = ({ imageSrc, onSave, onCancel 
     ctx.translate(cx, cy);
     ctx.translate(position.x * ratio, position.y * ratio);
     ctx.scale(scale, scale);
-    
+
     // Draw image centered
     const img = imgRef.current;
     // We draw the image such that its center is at (0,0) in the current context
@@ -80,11 +80,11 @@ const AvatarEditor: React.FC<AvatarEditorProps> = ({ imageSrc, onSave, onCancel 
     let drawWidth, drawHeight;
 
     if (imgAspect > 1) {
-        drawHeight = size;
-        drawWidth = size * imgAspect;
+      drawHeight = size;
+      drawWidth = size * imgAspect;
     } else {
-        drawWidth = size;
-        drawHeight = size / imgAspect;
+      drawWidth = size;
+      drawHeight = size / imgAspect;
     }
 
     ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
@@ -95,85 +95,85 @@ const AvatarEditor: React.FC<AvatarEditorProps> = ({ imageSrc, onSave, onCancel 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
-      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 shadow-2xl animate-fade-in flex flex-col items-center">
-        <h3 className="text-xl font-bold text-white mb-4">Editar Foto de Perfil</h3>
-        
+    <div className="fixed inset-0 bg-black/80 dark:bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-700 shadow-2xl animate-fade-in flex flex-col items-center transition-colors">
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 transition-colors">Editar Foto de Perfil</h3>
+
         {/* Editor Area */}
-        <div 
-            ref={containerRef}
-            className="relative w-[250px] h-[250px] rounded-full overflow-hidden border-4 border-indigo-500 bg-slate-900 shadow-inner mb-6 cursor-move touch-none"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onTouchStart={handleMouseDown}
-            onTouchMove={handleMouseMove}
-            onTouchEnd={handleMouseUp}
+        <div
+          ref={containerRef}
+          className="relative w-[250px] h-[250px] rounded-full overflow-hidden border-4 border-indigo-500 bg-slate-100 dark:bg-slate-900 shadow-inner mb-6 cursor-move touch-none transition-colors"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleMouseDown}
+          onTouchMove={handleMouseMove}
+          onTouchEnd={handleMouseUp}
         >
-            <div 
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                style={{ 
-                    transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                    transformOrigin: 'center'
-                }}
-            >
-                <img 
-                    ref={imgRef}
-                    src={imageSrc} 
-                    alt="Edit" 
-                    className="max-w-none max-h-none pointer-events-none"
-                    style={{
-                        // Ensure image covers area initially
-                        minWidth: '250px',
-                        minHeight: '250px',
-                        objectFit: 'cover'
-                    }}
-                    draggable={false}
-                />
-            </div>
-            
-            {/* Overlay hint */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 hover:opacity-100 transition-opacity bg-black/20">
-                <Move className="text-white drop-shadow-lg" />
-            </div>
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transformOrigin: 'center'
+            }}
+          >
+            <img
+              ref={imgRef}
+              src={imageSrc}
+              alt="Edit"
+              className="max-w-none max-h-none pointer-events-none"
+              style={{
+                // Ensure image covers area initially
+                minWidth: '250px',
+                minHeight: '250px',
+                objectFit: 'cover'
+              }}
+              draggable={false}
+            />
+          </div>
+
+          {/* Overlay hint */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 hover:opacity-100 transition-opacity bg-black/20">
+            <Move className="text-white drop-shadow-lg" />
+          </div>
         </div>
 
         {/* Controls */}
         <div className="w-full space-y-4 mb-6 px-4">
-            <div className="flex items-center justify-between text-slate-400 text-sm mb-1">
-                <ZoomOut size={16} />
-                <span>Zoom</span>
-                <ZoomIn size={16} />
-            </div>
-            <input 
-                type="range" 
-                min="1" 
-                max="3" 
-                step="0.1" 
-                value={scale} 
-                onChange={(e) => setScale(parseFloat(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-            />
-            <p className="text-center text-xs text-slate-500">
-                Arraste a imagem para posicionar
-            </p>
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-sm mb-1 transition-colors">
+            <ZoomOut size={16} />
+            <span>Zoom</span>
+            <ZoomIn size={16} />
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="3"
+            step="0.1"
+            value={scale}
+            onChange={(e) => setScale(parseFloat(e.target.value))}
+            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500 transition-colors"
+          />
+          <p className="text-center text-xs text-slate-500 dark:text-slate-500 transition-colors">
+            Arraste a imagem para posicionar
+          </p>
         </div>
 
         {/* Actions */}
         <div className="flex space-x-3 w-full">
-            <button 
-                onClick={onCancel}
-                className="flex-1 py-3 text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-xl transition-colors font-medium flex items-center justify-center"
-            >
-                <X className="mr-2" size={18}/> Cancelar
-            </button>
-            <button 
-                onClick={handleSave}
-                className="flex-1 py-3 text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors font-bold shadow-lg shadow-indigo-900/50 flex items-center justify-center"
-            >
-                <Check className="mr-2" size={18}/> Salvar
-            </button>
+          <button
+            onClick={onCancel}
+            className="flex-1 py-3 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-colors font-medium flex items-center justify-center"
+          >
+            <X className="mr-2" size={18} /> Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            className="flex-1 py-3 text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors font-bold shadow-lg shadow-indigo-900/50 flex items-center justify-center"
+          >
+            <Check className="mr-2" size={18} /> Salvar
+          </button>
         </div>
       </div>
     </div>

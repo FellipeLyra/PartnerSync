@@ -33,23 +33,23 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, companyId 
     );
 
     return (
-        <div className="flex flex-col h-full bg-slate-900 text-white overflow-hidden">
+        <div className="flex flex-col h-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white overflow-hidden transition-colors">
             {/* Header */}
-            <header className="px-8 py-6 border-b border-slate-700 bg-slate-800 flex items-center justify-between flex-shrink-0">
+            <header className="px-8 py-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex items-center justify-between flex-shrink-0 transition-colors">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-900 dark:text-white transition-colors">
                         <Users className="text-indigo-400" />
                         Equipe
                     </h1>
-                    <p className="text-slate-400 text-sm">Gerencie o acesso e permissões dos colaboradores</p>
+                    <p className="text-slate-600 dark:text-slate-400 text-sm transition-colors">Gerencie o acesso e permissões dos colaboradores</p>
                 </div>
                 {/* Search */}
                 <div className="relative">
-                    <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+                    <Search className="absolute left-3 top-2.5 text-slate-500 dark:text-slate-500" size={16} />
                     <input
                         type="text"
                         placeholder="Buscar membro..."
-                        className="bg-slate-900 border border-slate-600 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 w-64"
+                        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 w-64 transition-colors"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -60,20 +60,20 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, companyId 
             <div className="flex-1 p-8 overflow-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredUsers.map(user => (
-                        <div key={user.id} className="bg-slate-800 border border-slate-700 rounded-xl p-6 flex flex-col items-center text-center relative hover:border-slate-600 transition-colors group">
+                        <div key={user.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 flex flex-col items-center text-center relative hover:border-slate-300 dark:hover:border-slate-600 transition-colors group">
 
                             {/* Role Badge */}
                             <div className="absolute top-4 right-4">
                                 <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide border ${user.role === 'SUPER_ADMIN' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                        user.role === 'ADMIN' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                            'bg-slate-700 text-slate-300 border-slate-600'
+                                    user.role === 'ADMIN' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                        'bg-slate-700 text-slate-300 border-slate-600'
                                     }`}>
                                     {user.role === 'SUPER_ADMIN' ? 'Dono' : user.role === 'ADMIN' ? 'Admin' : 'Membro'}
                                 </span>
                             </div>
 
                             {/* Avatar */}
-                            <div className="w-20 h-20 rounded-full bg-slate-700 mb-4 flex items-center justify-center overflow-hidden border-4 border-slate-800 shadow-xl">
+                            <div className="w-20 h-20 rounded-full bg-slate-200 dark:bg-slate-700 mb-4 flex items-center justify-center overflow-hidden border-4 border-slate-100 dark:border-slate-800 shadow-xl transition-colors">
                                 {user.avatar ? (
                                     <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
                                 ) : (
@@ -82,11 +82,11 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, companyId 
                             </div>
 
                             {/* Info */}
-                            <h3 className="text-lg font-bold text-white mb-1">{user.username}</h3>
-                            <p className="text-slate-400 text-sm mb-6">{user.email || 'Sem email'}</p>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1 transition-colors">{user.username}</h3>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm mb-6 transition-colors">{user.email || 'Sem email'}</p>
 
                             {/* Permissions Summary (Optional) */}
-                            <div className="w-full bg-slate-900/50 rounded-lg p-3 mb-6 text-left">
+                            <div className="w-full bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 mb-6 text-left transition-colors">
                                 <p className="text-xs font-bold text-slate-500 uppercase mb-2">Acesso Atual</p>
                                 <div className="flex flex-wrap gap-1">
                                     {user.role === 'SUPER_ADMIN' ? (
@@ -109,7 +109,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ currentUser, companyId 
                             {/* Action */}
                             <button
                                 onClick={() => handleManageAccess(user)}
-                                className="w-full py-2 bg-slate-700 hover:bg-indigo-600 hover:text-white text-slate-300 rounded-lg transition-all font-medium flex items-center justify-center gap-2"
+                                className="w-full py-2 bg-slate-200 dark:bg-slate-700 hover:bg-indigo-600 hover:text-white text-slate-700 dark:text-slate-300 rounded-lg transition-all font-medium flex items-center justify-center gap-2"
                             >
                                 <Lock size={16} /> Gerenciar Permissões
                             </button>
