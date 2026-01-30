@@ -32,7 +32,7 @@ export interface TimeEntry {
   userId: string;
   username: string;
   timestamp: string; // ISO string
-  type: 'IN' | 'OUT';
+  type: 'IN' | 'LUNCH_START' | 'LUNCH_END' | 'OUT';
   isLate?: boolean; // If clocked in after 8:00 AM
 }
 

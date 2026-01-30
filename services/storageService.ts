@@ -215,6 +215,96 @@ export const storageService = {
     await setDoc(userRef, deepSanitize({ ...user }), { merge: true });
   },
 
+  cleanupDoneTasks: async (companyId: string): Promise<void> => {
+    if (!db || !companyId) return;
+    try {
+      const now = new Date();
+      // Brasilia Time "dd/mm/yyyy"
+      const todayBrasilia = now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+      const lastCleanup = localStorage.getItem(`lastDoneCleanup_${companyId}`);
+
+      if (lastCleanup === todayBrasilia) {
+        console.log('Auto-cleanup already executed today:', todayBrasilia);
+        return;
+      }
+
+      console.log('Executing daily cleanup of DONE tasks...');
+      const q = query(collection(db, 'projects'), where('companyId', '==', companyId));
+      const snapshot = await getDocs(q);
+      const projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
+
+      let updates = 0;
+
+      for (const project of projects) {
+        if (!project.tasks || project.tasks.length === 0) continue;
+
+        const originalCount = project.tasks.length;
+        // Filter out tasks that are DONE
+        const activeTasks = project.tasks.filter(t => t.status !== 'DONE');
+
+        if (activeTasks.length < originalCount) {
+          const projectRef = doc(db, 'projects', project.id);
+          // We must update the tasks array directly
+          await setDoc(projectRef, { tasks: deepSanitize(activeTasks) }, { merge: true });
+          updates++;
+        }
+      }
+
+      console.log(`Cleanup complete. Updated ${updates} projects.`);
+      localStorage.setItem(`lastDoneCleanup_${companyId}`, todayBrasilia);
+    } catch (error) {
+      console.error("Error executing cleanup:", error);
+    }
+  },
+
+  cleanupMonthlyTimeEntries: async (companyId: string): Promise<void> => {
+    if (!db || !companyId) return;
+    try {
+      const now = new Date();
+      // Brasilia Time Month check (e.g., "01/2026")
+      const options = { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit' } as const;
+      const currentMonthStr = now.toLocaleDateString('pt-BR', options);
+
+      const lastCleanupMonth = localStorage.getItem(`lastMonthlyReset_${companyId}`);
+
+      // If we haven't stored a cleanup month, or it's different from current, trigger check
+      if (lastCleanupMonth !== currentMonthStr) {
+        console.log('New Month Detected! Checking for old entries cleanup...', currentMonthStr);
+
+        // Query all entries for company
+        const q = query(collection(db, 'time_entries'), where('companyId', '==', companyId));
+        const snapshot = await getDocs(q);
+
+        // Define "Start of Current Month" in Brasilia Time
+        // We want to KEEP entries from THIS month. Delete entries from PREVIOUS months.
+
+        // Helper to get Year/Month of an entry in Brasilia Time
+        const getBrasiliaMonth = (date: Date) => {
+          return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit' });
+        };
+
+        const deletePromises = snapshot.docs.map(doc => {
+          const data = doc.data() as TimeEntry;
+          const entryDate = new Date(data.timestamp);
+          const entryMonth = getBrasiliaMonth(entryDate);
+
+          // If entry month is NOT current month, delete it
+          if (entryMonth !== currentMonthStr) {
+            return deleteDoc(doc.ref);
+          }
+          return Promise.resolve();
+        });
+
+        await Promise.all(deletePromises);
+        console.log('Monthly history cleanup complete.');
+        localStorage.setItem(`lastMonthlyReset_${companyId}`, currentMonthStr);
+      }
+    } catch (error) {
+      console.error("Error cleaning old time entries:", error);
+    }
+  },
+
   // --- PROJECTS (Kanban) ---
   subscribeProjects: (companyId: string, callback: (projects: Project[]) => void) => {
     if (!db || !companyId) return () => { };

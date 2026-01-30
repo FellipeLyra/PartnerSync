@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Clock, AlertCircle, CheckCircle, History, Calendar, TrendingUp, AlertTriangle, Users } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, History, Calendar, TrendingUp, AlertTriangle, Users, Coffee } from 'lucide-react';
 import { TimeEntry, User } from '../types';
 import { storageService } from '../services/storageService';
 
@@ -7,6 +7,17 @@ interface TimeTrackerProps {
   currentUser: User;
   companyId: string;
 }
+
+const calculateDelayMinutes = (timestamp: string): number => {
+  const date = new Date(timestamp);
+  const target = new Date(date);
+  target.setHours(8, 0, 0, 0);
+
+  if (date <= target) return 0;
+
+  const diffMs = date.getTime() - target.getTime();
+  return Math.floor(diffMs / (1000 * 60));
+};
 
 const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
@@ -25,12 +36,12 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
     };
   }, [companyId]);
 
-  const handleClockAction = async (type: 'IN' | 'OUT') => {
+  const handleClockAction = async (type: 'IN' | 'LUNCH_START' | 'LUNCH_END' | 'OUT') => {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
 
-    // Logic: Late if after 8:00 AM (e.g., 8:01 is late)
+    // Logic: Late if after 8:00 AM (e.g., 8:01 is late) - Only relevant for Initial IN
     const isLate = type === 'IN' && (currentHour > 8 || (currentHour === 8 && currentMinute > 0));
 
     const newEntry: TimeEntry = {
@@ -47,31 +58,79 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
   };
 
   // --- Statistics Calculation (Memoized) ---
-  const todayEntry = useMemo(() => entries.find(
+  const todayEntries = useMemo(() => entries.filter(
     (e) =>
       new Date(e.timestamp).toDateString() === new Date().toDateString() &&
-      e.userId === currentUser.id &&
-      e.type === 'IN'
-  ), [entries, currentUser.id]);
+      e.userId === currentUser.id
+  ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()), [entries, currentUser.id]);
 
-  const calculateDelayMinutes = useCallback((timestamp: string) => {
-    const date = new Date(timestamp);
-    const target = new Date(date);
-    target.setHours(8, 0, 0, 0);
-    const diffMs = date.getTime() - target.getTime();
-    return Math.floor(diffMs / 60000);
-  }, []);
+  const lastEntry = todayEntries.length > 0 ? todayEntries[todayEntries.length - 1] : null;
 
-  const { totalLateDays, averageDelay } = useMemo(() => {
+  // Determine Current State
+  const getNextAction = () => {
+    if (!lastEntry) return 'IN';
+    if (lastEntry.type === 'IN') return 'LUNCH_START';
+    if (lastEntry.type === 'LUNCH_START') return 'LUNCH_END';
+    if (lastEntry.type === 'LUNCH_END') return 'OUT';
+    if (lastEntry.type === 'OUT') return 'DONE'; // Day completed
+    return 'IN';
+  };
+
+  const nextAction = getNextAction();
+
+  const { totalLateDays, averageHoursWorked } = useMemo(() => {
+    // 1. Calculate Late Days (Simple)
     const myInEntries = entries.filter(e => e.userId === currentUser.id && e.type === 'IN');
-    const lateEntries = myInEntries.filter(e => e.isLate);
-    const totalLate = lateEntries.length;
+    const totalLate = myInEntries.filter(e => e.isLate).length;
 
-    const totalDelay = lateEntries.reduce((acc, curr) => acc + calculateDelayMinutes(curr.timestamp), 0);
-    const avgDelay = totalLate > 0 ? Math.round(totalDelay / totalLate) : 0;
+    // 2. Calculate Average Hours Worked
+    // Group entries by Day
+    const entriesByDay: { [key: string]: TimeEntry[] } = {};
 
-    return { totalLateDays: totalLate, averageDelay: avgDelay };
-  }, [entries, currentUser.id, calculateDelayMinutes]);
+    entries
+      .filter(e => e.userId === currentUser.id)
+      .forEach(e => {
+        const day = new Date(e.timestamp).toDateString();
+        if (!entriesByDay[day]) entriesByDay[day] = [];
+        entriesByDay[day].push(e);
+      });
+
+    let totalHours = 0;
+    let daysWithCompleteData = 0;
+
+    Object.values(entriesByDay).forEach(dailyEntries => {
+      dailyEntries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+      const inEntry = dailyEntries.find(e => e.type === 'IN');
+      const outEntry = dailyEntries.find(e => e.type === 'OUT');
+      const lunchStart = dailyEntries.find(e => e.type === 'LUNCH_START');
+      const lunchEnd = dailyEntries.find(e => e.type === 'LUNCH_END');
+
+      // Only calculate if we have at least IN and OUT
+      if (inEntry && outEntry) {
+        const start = new Date(inEntry.timestamp).getTime();
+        const end = new Date(outEntry.timestamp).getTime();
+        let workedMs = end - start;
+
+        // Deduct Lunch
+        if (lunchStart && lunchEnd) {
+          const lStart = new Date(lunchStart.timestamp).getTime();
+          const lEnd = new Date(lunchEnd.timestamp).getTime();
+          workedMs -= (lEnd - lStart);
+        }
+
+        const hours = workedMs / (1000 * 60 * 60);
+        if (hours > 0) {
+          totalHours += hours;
+          daysWithCompleteData++;
+        }
+      }
+    });
+
+    const averageHours = daysWithCompleteData > 0 ? (totalHours / daysWithCompleteData).toFixed(1) : "0.0";
+
+    return { totalLateDays: totalLate, averageHoursWorked: averageHours };
+  }, [entries, currentUser.id]);
 
   // --- Week Helper (Memoized) ---
   const weekDays = useMemo(() => {
@@ -118,6 +177,44 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
     });
   }, [entries, currentUser.id]);
 
+  // Get Button Config based on Next Action
+  const getButtonConfig = () => {
+    switch (nextAction) {
+      case 'IN':
+        return {
+          text: 'REGISTRAR ENTRADA',
+          colorClass: 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30',
+          icon: <Clock className="mr-2 h-6 w-6" />,
+          action: () => handleClockAction('IN')
+        };
+      case 'LUNCH_START':
+        return {
+          text: 'INICIAR ALMOÇO',
+          colorClass: 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/30',
+          icon: <Coffee className="mr-2 h-6 w-6" />,
+          action: () => handleClockAction('LUNCH_START')
+        };
+      case 'LUNCH_END':
+        return {
+          text: 'RETORNAR DO ALMOÇO',
+          colorClass: 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/30',
+          icon: <Clock className="mr-2 h-6 w-6" />,
+          action: () => handleClockAction('LUNCH_END')
+        };
+      case 'OUT':
+        return {
+          text: 'REGISTRAR SAÍDA',
+          colorClass: 'bg-red-500 hover:bg-red-400 shadow-red-500/30',
+          icon: <Clock className="mr-2 h-6 w-6" />,
+          action: () => handleClockAction('OUT')
+        };
+      default:
+        return null;
+    }
+  };
+
+  const buttonConfig = getButtonConfig();
+
   return (
     <div className="p-8 h-full overflow-y-auto">
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between">
@@ -143,8 +240,8 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
             <TrendingUp size={24} />
           </div>
           <div>
-            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium uppercase transition-colors">Sua Média de Atraso</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white transition-colors">{averageDelay} <span className="text-sm text-slate-500 dark:text-slate-500 font-normal">minutos</span></p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium uppercase transition-colors">Média de Horas (Diária)</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white transition-colors">{averageHoursWorked} <span className="text-sm text-slate-500 dark:text-slate-500 font-normal">horas</span></p>
           </div>
         </div>
       </div>
@@ -164,28 +261,33 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
                 month: 'long'
               })}  </div>
 
-            {!todayEntry ? (
+            {buttonConfig ? (
               <button
-                onClick={() => handleClockAction('IN')}
-                className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-emerald-600 rounded-full hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 focus:ring-offset-white dark:focus:ring-offset-slate-800 shadow-lg shadow-emerald-500/30 dark:shadow-emerald-900/50"
+                onClick={buttonConfig.action}
+                className={`group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 ${buttonConfig.colorClass} dark:focus:ring-offset-slate-800 shadow-lg`}
               >
-                <Clock className="mr-2 -ml-1 h-6 w-6 group-hover:animate-pulse" />
-                REGISTRAR ENTRADA
+                {buttonConfig.icon}
+                {buttonConfig.text}
               </button>
             ) : (
               <div className="flex flex-col items-center animate-fade-in w-full">
-                <div className={`flex items-center space-x-2 text-lg font-bold mb-6 p-4 rounded-xl w-full justify-center ${todayEntry.isLate ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
-                  {todayEntry.isLate ? <AlertCircle /> : <CheckCircle />}
-                  <span>{todayEntry.isLate ? 'Entrada com Atraso' : 'Entrada Pontual'}</span>
+                <div className="flex items-center space-x-2 text-lg font-bold mb-2 p-4 rounded-xl w-full justify-center bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                  <CheckCircle />
+                  <span>Jornada Completa</span>
                 </div>
-                <button
-                  onClick={() => handleClockAction('OUT')}
-                  className="w-full px-8 py-4 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-xl font-medium transition-colors border border-slate-300 dark:border-slate-600 hover:text-slate-900 dark:hover:text-white"
-                >
-                  Registrar Saída (Fim do Dia)
-                </button>
+                <p className="text-sm text-slate-400">Até amanhã!</p>
               </div>
             )}
+
+            {/* Status Indicators */}
+            <div className="mt-8 flex space-x-2 w-full justify-center">
+              {['IN', 'LUNCH_START', 'LUNCH_END', 'OUT'].map((step, idx) => {
+                const stepDone = todayEntries.some(e => e.type === step);
+                return (
+                  <div key={idx} className={`h-2 flex-1 rounded-full transition-colors ${stepDone ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                );
+              })}
+            </div>
           </div>
 
           {/* Weekly Status */}
@@ -284,6 +386,28 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
               const delay = entry.isLate && entry.type === 'IN' ? calculateDelayMinutes(entry.timestamp) : 0;
               const isMe = entry.userId === currentUser.id;
 
+              let typeLabel = '';
+              let typeColor = '';
+
+              switch (entry.type) {
+                case 'IN':
+                  typeLabel = entry.isLate ? 'ATRASADO' : 'ENTRADA';
+                  typeColor = entry.isLate ? 'text-red-400' : 'text-emerald-400';
+                  break;
+                case 'LUNCH_START':
+                  typeLabel = 'SAÍDA ALMOÇO';
+                  typeColor = 'text-amber-400';
+                  break;
+                case 'LUNCH_END':
+                  typeLabel = 'VOLTA ALMOÇO';
+                  typeColor = 'text-indigo-400';
+                  break;
+                case 'OUT':
+                  typeLabel = 'SAÍDA';
+                  typeColor = 'text-slate-500';
+                  break;
+              }
+
               return (
                 <div
                   key={entry.id}
@@ -291,11 +415,9 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
                 >
                   <div className="flex items-center space-x-3">
                     <div
-                      className={`w-2 h-10 rounded-full ${entry.type === 'IN'
-                        ? entry.isLate
-                          ? 'bg-red-500'
-                          : 'bg-emerald-500'
-                        : 'bg-slate-500'
+                      className={`w-2 h-10 rounded-full ${entry.type === 'IN' ? (entry.isLate ? 'bg-red-500' : 'bg-emerald-500') :
+                        entry.type === 'LUNCH_START' ? 'bg-amber-500' :
+                          entry.type === 'LUNCH_END' ? 'bg-indigo-500' : 'bg-slate-500'
                         }`}
                     />
                     <div>
@@ -317,13 +439,8 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ currentUser, companyId }) => 
                     <p className="text-lg font-bold text-slate-900 dark:text-white transition-colors">
                       {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                     </p>
-                    <p className={`text-xs font-bold uppercase ${entry.type === 'IN'
-                      ? entry.isLate
-                        ? 'text-red-400'
-                        : 'text-emerald-400'
-                      : 'text-slate-500'
-                      }`}>
-                      {entry.type === 'IN' ? (entry.isLate ? 'ATRASADO' : 'PONTUAL') : 'SAÍDA'}
+                    <p className={`text-xs font-bold uppercase ${typeColor}`}>
+                      {typeLabel}
                     </p>
                   </div>
                 </div>

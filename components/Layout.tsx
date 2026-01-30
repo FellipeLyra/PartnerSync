@@ -1,9 +1,9 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Clock, KanbanSquare, MessageSquare, LogOut, Check, X, Camera, UserPlus, Copy, User as UserIcon, ShieldAlert, DollarSign, Users, Target } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Clock, KanbanSquare, MessageSquare, LogOut, Check, X, Camera, UserPlus, Copy, User as UserIcon, ShieldAlert, DollarSign, Users, Target, Settings } from 'lucide-react';
 import { User, ViewState, Company } from '../types';
 import { storageService } from '../services/storageService';
-import AvatarEditor from './AvatarEditor';
 import { ThemeToggle } from './ThemeToggle';
+import ProfileSettingsModal from './ProfileSettingsModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,15 +16,17 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onChangeView, onLogout, onUpdateUser, unreadCount = 0 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showEditor, setShowEditor] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
 
   useEffect(() => {
     if (currentUser?.companyId) {
       storageService.getCompany(currentUser.companyId).then(setCompany);
+      // Run daily cleanup for DONE tasks
+      storageService.cleanupDoneTasks(currentUser.companyId);
+      // Run monthly cleanup for Time Entries (Reset 1st of month)
+      storageService.cleanupMonthlyTimeEntries(currentUser.companyId);
     }
   }, [currentUser]);
 
@@ -62,30 +64,6 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
     const defaults = ['TIME_CLOCK', 'PROJECTS', 'CHAT', 'CRM'];
     return defaults.includes(item.id);
   });
-
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
-        setShowEditor(true);
-      };
-      reader.readAsDataURL(file);
-    }
-    // Reset input so same file can be selected again
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleSaveAvatar = (base64: string) => {
-    onUpdateUser({ ...currentUser, avatar: base64 });
-    setShowEditor(false);
-    setSelectedImage(null);
-  };
 
   return (
     <div className="flex h-screen bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors">
@@ -141,8 +119,8 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
             {/* Avatar with Click to Edit */}
             <div
               className="relative group cursor-pointer"
-              onClick={handleAvatarClick}
-              title="Clique para alterar foto"
+              onClick={() => setShowProfileModal(true)}
+              title="Clique para editar perfil"
             >
               <div className="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center overflow-hidden border-2 border-slate-400 dark:border-slate-500 group-hover:border-indigo-500 transition-colors">
                 {currentUser.avatar ? (
@@ -153,20 +131,12 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
               </div>
               {/* Overlay Icon */}
               <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera size={14} className="text-white" />
+                <Settings size={14} className="text-white" />
               </div>
-              {/* Hidden Input */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
             </div>
 
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white truncate transition-colors">{currentUser.username}</p>
+            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setShowProfileModal(true)}>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white truncate transition-colors hover:text-indigo-500 dark:hover:text-indigo-400">{currentUser.username}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate transition-colors">Online</p>
             </div>
           </div>
@@ -226,14 +196,13 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
         </div>
       )}
 
-      {/* Avatar Editor Modal */}
-      {showEditor && selectedImage && (
-        <AvatarEditor
-          imageSrc={selectedImage}
-          onSave={handleSaveAvatar}
-          onCancel={() => { setShowEditor(false); setSelectedImage(null); }}
-        />
-      )}
+      {/* Profile Settings Modal */}
+      <ProfileSettingsModal
+        currentUser={currentUser}
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onUpdateUser={onUpdateUser}
+      />
     </div>
   );
 };

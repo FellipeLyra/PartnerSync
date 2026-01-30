@@ -4,7 +4,6 @@ import { LayoutDashboard, Users, KanbanSquare, Settings } from 'lucide-react';
 import CRMDashboard from './CRMDashboard';
 import CRMClientList from './CRMClientList';
 import PipelineBoard from '@/components/crm/PipelineBoard';
-import CRMSettings from './CRMSettings';
 
 interface CRMLayoutProps {
     currentUser: User;
@@ -12,7 +11,7 @@ interface CRMLayoutProps {
     onUpdateUser?: (user: User) => void;
 }
 
-type CRMView = 'DASHBOARD' | 'PIPELINE' | 'CLIENTS' | 'SETTINGS';
+type CRMView = 'DASHBOARD' | 'PIPELINE' | 'CLIENTS';
 
 const CRMLayout: React.FC<CRMLayoutProps> = ({ currentUser, companyId, onUpdateUser }) => {
     const [view, setView] = useState<CRMView>('DASHBOARD');
@@ -45,13 +44,6 @@ const CRMLayout: React.FC<CRMLayoutProps> = ({ currentUser, companyId, onUpdateU
                         <Users size={16} />
                         <span>Clientes & Leads</span>
                     </button>
-                    <button
-                        onClick={() => setView('SETTINGS')}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${view === 'SETTINGS' ? 'bg-indigo-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-                    >
-                        <Settings size={16} />
-                        <span>Configurações</span>
-                    </button>
                 </nav>
             </header>
 
@@ -60,13 +52,6 @@ const CRMLayout: React.FC<CRMLayoutProps> = ({ currentUser, companyId, onUpdateU
                 {view === 'DASHBOARD' && <CRMDashboard companyId={companyId} />}
                 {view === 'PIPELINE' && <PipelineBoard currentUser={currentUser} companyId={companyId} />}
                 {view === 'CLIENTS' && <CRMClientList currentUser={currentUser} companyId={companyId} />}
-                {view === 'SETTINGS' && (
-                    onUpdateUser ? (
-                        <CRMSettings currentUser={currentUser} onUpdateUser={onUpdateUser} />
-                    ) : (
-                        <div className="p-8 text-center text-slate-400">Função de atualização de usuário não disponível.</div>
-                    )
-                )}
             </div>
         </div>
     );
