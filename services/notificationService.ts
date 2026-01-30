@@ -115,7 +115,7 @@ export const notificationService = {
         try {
             // Create fresh audio element each time for better reliability
             const audio = new Audio();
-            audio.volume = 0.5;
+            audio.volume = 1.0; // Max volume
 
             // Generate sound on-the-fly using Web Audio API and convert to blob
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -140,7 +140,7 @@ export const notificationService = {
                     value = Math.sin(2 * Math.PI * 700 * t2) * Math.exp(-t2 * 20);
                 }
 
-                data[i] = value * 0.3; // Volume
+                data[i] = value * 0.8; // Increased Volume (was 0.3)
             }
 
             // Convert buffer to WAV blob

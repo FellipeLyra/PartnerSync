@@ -6,6 +6,7 @@ import { ThemeToggle } from './ThemeToggle';
 import ProfileSettingsModal from './ProfileSettingsModal';
 
 import Chat from './Chat';
+import NotificationBell from './NotificationBell';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,10 +15,10 @@ interface LayoutProps {
   onChangeView: (view: ViewState) => void;
   onLogout: () => void;
   onUpdateUser: (user: User) => void;
-  unreadCount?: number;
+  onNavigate?: (view: ViewState, params?: any) => void; // Added onNavigate
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onChangeView, onLogout, onUpdateUser, unreadCount = 0 }) => {
+const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onChangeView, onLogout, onUpdateUser, onNavigate }) => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAiChat, setShowAiChat] = useState(false);
@@ -90,11 +91,6 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
             >
               <item.icon size={20} />
               <span className="font-medium">{item.label}</span>
-              {item.id === 'CHAT' && unreadCount > 0 && (
-                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
             </button>
           ))}
         </nav>
@@ -158,8 +154,27 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, currentView, onC
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden relative flex flex-col">
-        {children}
+      <main className="flex-1 overflow-hidden relative flex flex-col bg-slate-50 dark:bg-slate-900 transition-colors">
+
+        {/* Top Header */}
+        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 flex-shrink-0 z-20">
+          {/* Title / Breadcrumb (Dynamic based on View) */}
+          <div className="flex items-center">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-white capitalize">
+              {allNavItems.find(i => i.id === currentView)?.label || 'Dashboard'}
+            </h2>
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center space-x-4">
+            <NotificationBell currentUser={currentUser} onNavigate={onNavigate} />
+          </div>
+        </header>
+
+        {/* View Content */}
+        <div className="flex-1 overflow-hidden relative">
+          {children}
+        </div>
       </main>
 
       {/* Modals */}

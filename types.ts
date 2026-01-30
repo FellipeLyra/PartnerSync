@@ -180,3 +180,16 @@ export interface ClientMessage {
   senderId?: string; // ID of the user (employee) who sent the message
   senderName?: string; // Display name
 }
+
+export interface AppNotification {
+  id: string;
+  userId: string; // Recipient
+  type: 'MENTION' | 'MESSAGE';
+  title: string;
+  message: string;
+  projectId: string;
+  projectName: string;
+  createdAt: number;
+  read: boolean;
+  targetId?: string; // ID of the specific item (e.g. messageId) to navigate to
+}

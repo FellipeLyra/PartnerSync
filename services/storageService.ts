@@ -13,7 +13,7 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { User, Project, TimeEntry, ChatMessage, TaskStatus, Company, Transaction, UserPermissions, Client, Deal } from '../types';
+import { User, Project, TimeEntry, ChatMessage, TaskStatus, Company, Transaction, UserPermissions, Client, Deal, AppNotification } from '../types';
 
 // Convert Firebase Snapshots to our Types
 const mapDoc = (doc: any) => ({ id: doc.id, ...doc.data() });
@@ -128,6 +128,17 @@ export const storageService = {
       console.error("Error getting all users:", error);
       return [];
     }
+  },
+
+  subscribeCompanyUsers: (companyId: string, callback: (users: User[]) => void) => {
+    if (!db || !companyId) return () => { };
+    const q = query(collection(db, 'users'), where('companyId', '==', companyId));
+    return onSnapshot(q, (snapshot) => {
+      const users = snapshot.docs.map(mapDoc) as User[];
+      callback(users);
+    }, (error) => {
+      console.warn("Error subscribing to users:", error);
+    });
   },
 
   deleteCompany: async (companyId: string): Promise<void> => {
@@ -417,10 +428,13 @@ export const storageService = {
     });
   },
 
-  saveChatMessage: async (msg: ChatMessage) => {
-    if (!db) return;
+  saveChatMessage: async (msg: ChatMessage): Promise<string> => {
+    if (!db) return '';
     const { id, ...data } = msg;
-    await addDoc(collection(db, 'chat'), deepSanitize(data));
+    const ref = await addDoc(collection(db, 'chat'), deepSanitize(data));
+    // Asynchronously update the document with its ID for consistency
+    setDoc(doc(db, 'chat', ref.id), { id: ref.id }, { merge: true });
+    return ref.id;
   },
 
   updateChatMessage: async (msg: ChatMessage) => {
@@ -472,21 +486,7 @@ export const storageService = {
     await deleteDoc(doc(db, 'transactions', transactionId));
   },
 
-  // --- TEAM MANAGEMENT ---
-  subscribeCompanyUsers: (companyId: string, callback: (users: User[]) => void) => {
-    if (!db || !companyId) return () => { };
-    const q = query(
-      collection(db, 'users'),
-      where('companyId', '==', companyId)
-    );
 
-    return onSnapshot(q, (snapshot) => {
-      const users = snapshot.docs.map(mapDoc) as User[];
-      callback(users);
-    }, (error) => {
-      console.warn("Firestore Listener Error (Company Users):", error.message);
-    });
-  },
 
   updateUserPermissions: async (userId: string, permissions: UserPermissions) => {
     if (!db) return;
@@ -672,5 +672,37 @@ export const storageService = {
     const { id, ...data } = newDeal;
     await addDoc(collection(db, 'deals'), deepSanitize(data));
     return newDeal.title;
+  },
+
+  // --- NOTIFICATIONS ---
+  createNotification: async (notification: AppNotification) => {
+    if (!db) return;
+    console.log("[NotificationCreate] Creating:", notification);
+    const { id, ...data } = notification;
+    await addDoc(collection(db, 'notifications'), deepSanitize(data));
+  },
+
+  subscribeNotifications: (userId: string, callback: (notifications: AppNotification[]) => void) => {
+    if (!db || !userId) return () => { };
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      where('read', '==', false)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      console.log(`[NotificationSubscription] Snapshot received. Docs: ${snapshot.docs.length}`);
+      const notifications = snapshot.docs.map(mapDoc) as AppNotification[];
+      // Sort by newest first
+      notifications.sort((a, b) => b.createdAt - a.createdAt);
+      callback(notifications);
+    }, (error) => {
+      console.warn("Firestore Listener Error (Notifications):", error.message);
+    });
+  },
+
+  markNotificationAsRead: async (notificationId: string) => {
+    if (!db) return;
+    await setDoc(doc(db, 'notifications', notificationId), { read: true }, { merge: true });
   }
 };

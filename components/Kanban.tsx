@@ -7,9 +7,11 @@ import Chat from './Chat';
 interface KanbanProps {
     currentUser?: User; // Optional initially but usually required for chat
     companyId: string;
+    initialProjectId?: string;
+    initialShowChat?: boolean;
 }
 
-const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
+const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectId, initialShowChat }) => {
     const [projects, setProjects] = useState<Project[]>([]);
     const [activeProjectId, setActiveProjectId] = useState<string>('');
 
@@ -69,6 +71,11 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
             setProjects(visibleProjects);
 
             setActiveProjectId(currentId => {
+                // 1. If we have a deep-linked project valid in this new list, USE IT.
+                if (initialProjectId && visibleProjects.some(p => p.id === initialProjectId)) {
+                    return initialProjectId;
+                }
+
                 // Try to recover from localStorage
                 const savedId = localStorage.getItem('lastActiveProjectId');
 
@@ -90,7 +97,14 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId }) => {
             });
         });
         return () => unsubscribe();
-    }, [companyId, currentUser]);
+    }, [companyId, currentUser, initialProjectId]);
+
+    // Handle Deep Linking Chat Toggle
+    useEffect(() => {
+        if (initialProjectId && activeProjectId === initialProjectId && initialShowChat) {
+            setShowProjectChat(true);
+        }
+    }, [activeProjectId, initialProjectId, initialShowChat]);
 
     // Save active project to localStorage
     useEffect(() => {

@@ -14,6 +14,7 @@ interface ChatProps {
     isEmbedded?: boolean; // If true, renders with a close button and slightly different layout
     isAiOnly?: boolean; // If true, all messages trigger AI response without @chat
     onClose?: () => void;
+    initialTargetId?: string;
 }
 
 const Chat: React.FC<ChatProps> = ({
@@ -23,7 +24,8 @@ const Chat: React.FC<ChatProps> = ({
     title = 'Chat da Equipe',
     isEmbedded = false,
     isAiOnly = false,
-    onClose
+    onClose,
+    initialTargetId
 }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState('');
@@ -44,6 +46,12 @@ const Chat: React.FC<ChatProps> = ({
     // Lightbox State
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+    // Mentions State
+    const [users, setUsers] = useState<User[]>([]);
+    const [showMentions, setShowMentions] = useState(false);
+    const [mentionQuery, setMentionQuery] = useState('');
+    const [mentionIndex, setMentionIndex] = useState(-1); // Index in filtered users for keyboard nav
+
     // Legacy Avatar Support for old messages
     const [knownAvatars, setKnownAvatars] = useState<Record<string, string>>({});
     const knownAvatarsRef = useRef<Record<string, string>>({}); // Ref to avoid useEffect dependency loops
@@ -61,8 +69,31 @@ const Chat: React.FC<ChatProps> = ({
         currentUserRef.current = currentUser;
     }, [currentUser]);
 
+    // Initial Scroll / Highlight logic
+    useEffect(() => {
+        if (initialTargetId && messages.length > 0) {
+            // Wait slightly for rendering
+            setTimeout(() => {
+                const element = document.getElementById(`msg-${initialTargetId}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Optional: Add highlight flash class
+                    element.classList.add('bg-yellow-100', 'dark:bg-yellow-900/30', 'transition-colors', 'duration-1000');
+                    setTimeout(() => {
+                        element.classList.remove('bg-yellow-100', 'dark:bg-yellow-900/30');
+                    }, 2000);
+                }
+            }, 500);
+        } else if (!initialTargetId && messages.length > 0) {
+            scrollToBottom();
+        }
+    }, [messages, initialTargetId]); // Re-run when messages load or targetId changes
+
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        // Only scroll if we are NOT targeting a specific past message
+        if (!initialTargetId) {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
     };
 
     useEffect(() => {
@@ -90,6 +121,16 @@ const Chat: React.FC<ChatProps> = ({
         });
         return () => unsubscribe();
     }, [projectId, companyId]);
+
+    // Fetch Users for Mentions
+    useEffect(() => {
+        if (!companyId) return;
+        const unsubscribe = storageService.subscribeCompanyUsers(companyId, (fetchedUsers) => {
+            console.log("[Chat] Users fetched:", fetchedUsers.length);
+            setUsers(fetchedUsers);
+        });
+        return () => unsubscribe();
+    }, [companyId]);
 
     // Robust Avatar Loading for Legacy Messages
     useEffect(() => {
@@ -145,6 +186,58 @@ const Chat: React.FC<ChatProps> = ({
             processFile(file);
         }
         if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    // Handle Input Change for Mentions
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setInputValue(value);
+
+        // Simple mention detection: last word starts with @
+        const items = value.split(' ');
+        const lastWord = items[items.length - 1];
+
+        if (lastWord.startsWith('@')) {
+            setShowMentions(true);
+            setMentionQuery(lastWord.substring(1).toLowerCase());
+            setMentionIndex(0);
+        } else {
+            setShowMentions(false);
+        }
+    };
+
+    const insertMention = (username: string) => {
+        const items = inputValue.split(' ');
+        items.pop(); // Remove the partial @mention
+        const newValue = [...items, `@${username} `].join(' ');
+        setInputValue(newValue);
+        setShowMentions(false);
+        fileInputRef.current?.focus();
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        // Handle mention navigation
+        if (showMentions) {
+            const chatGPTUser: User = { id: 'chatgpt-bot', username: 'chat', email: 'ai@partnersync.com', avatar: '', companyId: companyId, role: 'MEMBER' };
+            const suggestedUsers = [chatGPTUser, ...users].filter(u => u.username.toLowerCase().includes(mentionQuery));
+
+            if (suggestedUsers.length > 0) {
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setMentionIndex(prev => (prev > 0 ? prev - 1 : suggestedUsers.length - 1));
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setMentionIndex(prev => (prev < suggestedUsers.length - 1 ? prev + 1 : 0));
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault();
+                    if (mentionIndex >= 0 && mentionIndex < suggestedUsers.length) {
+                        insertMention(suggestedUsers[mentionIndex].username);
+                    }
+                } else if (e.key === 'Escape') {
+                    setShowMentions(false);
+                }
+            }
+        }
     };
 
     const handlePaste = (e: React.ClipboardEvent) => {
@@ -354,7 +447,73 @@ const Chat: React.FC<ChatProps> = ({
                 userAvatar: currentUser.avatar
             };
 
-            await storageService.saveChatMessage(userMsg);
+            const savedMsgId = await storageService.saveChatMessage(userMsg);
+
+            // --- NOTIFICATION LOGIC ---
+            // 1. Identify valid mentions (case-insensitive check)
+            const lowerInput = inputValue.toLowerCase();
+            const mentionedUsers = users.filter(u => lowerInput.includes(`@${u.username.toLowerCase()}`));
+
+            // 2. Identify who needs to be notified
+            // Map of UserId -> Notification Type
+            const usersToNotify = new Map<string, 'MENTION' | 'MESSAGE'>();
+
+            // Team Chat & Project Chat: Notify everyone (except self)
+            // TODO: In the future, filter by project members if needed.
+            console.log("[Chat] Processing Chat Notifications. Project:", projectId, "Total Users:", users.length);
+
+            // Normalize caching KEY logic if necessary, but here we just notify everyone
+            users.forEach(u => {
+                if (u.id !== currentUser.id) {
+                    // Only add if not already mentioned (mentions take precedence)
+                    if (!usersToNotify.has(u.id)) {
+                        usersToNotify.set(u.id, 'MESSAGE');
+                    }
+                }
+            });
+
+            // Mentions always take precedence and are added for Project Chat too
+            mentionedUsers.forEach(u => {
+                if (u.id !== currentUser.id) {
+                    usersToNotify.set(u.id, 'MENTION');
+                }
+            });
+
+            // 3. Send Notifications
+            usersToNotify.forEach(async (type, targetUserId) => {
+                const targetUser = users.find(u => u.id === targetUserId);
+                if (!targetUser) return;
+
+                // Customize title based on type and context
+                let noteTitle = '';
+                let noteMessage = '';
+
+                if (type === 'MENTION') {
+                    noteTitle = `Nova menção de ${currentUser.username}`;
+                    noteMessage = inputValue;
+                } else {
+                    noteTitle = `Nova mensagem em ${title}`;
+                    noteMessage = `${currentUser.username}: ${inputValue}`; // Show sender in message body
+                }
+
+                try {
+                    await storageService.createNotification({
+                        id: '', // Auto-generated
+                        userId: targetUser.id,
+                        type: type,
+                        title: noteTitle,
+                        message: noteMessage,
+                        projectId: projectId,
+                        projectName: title,
+                        createdAt: Date.now(),
+                        read: false,
+                        targetId: savedMsgId // PASS THE ID HERE
+                    });
+                } catch (err) {
+                    console.error("Failed to send notification:", err);
+                }
+            });
+            // ---------------------------
 
             const currentInput = inputValue;
             setInputValue('');
@@ -392,11 +551,41 @@ const Chat: React.FC<ChatProps> = ({
                 username: 'ChatGPT',
                 text: aiResponseText,
                 timestamp: Date.now() + 1,
+                mediaUrl: undefined,
+                mediaType: undefined,
                 isAi: true,
                 companyId: companyId,
-                projectId: projectId
+                projectId: projectId,
+                userAvatar: ''
             };
-            await storageService.saveChatMessage(aiMsg);
+            const savedAiMsgId = await storageService.saveChatMessage(aiMsg);
+
+            // --- AI NOTIFICATION LOGIC ---
+            if (projectId === 'global') {
+                const recipients = users.length > 0 ? users : [currentUser];
+
+                recipients.forEach(async (u) => {
+                    try {
+                        await storageService.createNotification({
+                            id: '',
+                            userId: u.id,
+                            type: 'MESSAGE',
+                            title: 'PartnerSync AI (Chat)',
+                            message: aiResponseText,
+                            projectId: projectId,
+                            projectName: 'ChatGPT',
+                            createdAt: Date.now(),
+                            read: false,
+                            targetId: savedAiMsgId
+                        });
+                    } catch (err) {
+                        console.error("Failed to notify AI response:", err);
+                    }
+                });
+            }
+            // -----------------------------
+            // -----------------------------
+
         } finally {
             setIsAiThinking(false);
         }
@@ -620,6 +809,7 @@ const Chat: React.FC<ChatProps> = ({
                     return (
                         <div
                             key={msg.id}
+                            id={`msg-${msg.id}`}
                             className={`flex w-full group ${isMe ? 'justify-end' : 'justify-start'}`}
                         >
                             <div className={`flex max-w-[85%] items-start gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -693,9 +883,25 @@ const Chat: React.FC<ChatProps> = ({
                                             </div>
                                         )}
 
-                                        {/* Message Text */}
+                                        {/* Message Text with Mention Highlighting */}
                                         {msg.text && (
-                                            <p className="select-text">{msg.text}</p>
+                                            <p className="select-text">
+                                                {msg.text.split(/(@\w+)/g).map((part, i) => {
+                                                    if (part.startsWith('@')) {
+                                                        const username = part.substring(1);
+                                                        // Check if it's a valid user or 'chat'
+                                                        const isValidUser = users.some(u => u.username === username) || username === 'chat';
+                                                        if (isValidUser) {
+                                                            return (
+                                                                <span key={i} className="font-bold text-indigo-600 dark:text-indigo-400">
+                                                                    {part}
+                                                                </span>
+                                                            );
+                                                        }
+                                                    }
+                                                    return part;
+                                                })}
+                                            </p>
                                         )}
 
                                         {/* YouTube Embed */}
@@ -865,41 +1071,85 @@ const Chat: React.FC<ChatProps> = ({
                     </div>
                 )}
 
-                <div className={`flex items-center space-x-2 bg-white dark:bg-slate-900 p-2 border border-slate-300 dark:border-slate-600 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all ${(replyToMessage || editingMessageId) ? 'rounded-b-xl border-t-0' : 'rounded-xl'}`}>
+                <div className="relative">
+                    {/* Mentions Dropdown */}
+                    {showMentions && (
+                        <div className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto animate-fade-in">
+                            {(() => {
+                                const chatGPTUser: User = {
+                                    id: 'chatgpt-bot',
+                                    username: 'chat',
+                                    email: 'ai@partnersync.com',
+                                    avatar: '',
+                                    companyId: companyId,
+                                    role: 'MEMBER'
+                                };
+                                const suggestedUsers = [chatGPTUser, ...users].filter(u => u.username.toLowerCase().includes(mentionQuery));
 
-                    <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-2 text-slate-600 dark:text-slate-400 hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
-                        title="Anexar imagem ou vídeo"
-                    >
-                        <Paperclip size={18} />
-                    </button>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        accept="image/*,video/*"
-                    />
+                                if (suggestedUsers.length === 0) {
+                                    return <div className="p-2 text-sm text-slate-500 text-center">Ninguém encontrado</div>;
+                                }
 
-                    <input
-                        type="text"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                        onPaste={handlePaste}
-                        placeholder={isEmbedded ? "Mensagem..." : "Digite sua mensagem..."}
-                        className="flex-1 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 px-2 focus:outline-none min-w-0 text-sm transition-colors"
-                    />
-                    <button
-                        type="button"
-                        onClick={handleSendMessage}
-                        disabled={!inputValue.trim() && !attachment}
-                        className={`p-2 text-white rounded-lg transition-colors flex-shrink-0 ${editingMessageId ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-500'} disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                        {editingMessageId ? <Check size={18} /> : <Send size={18} />}
-                    </button>
+                                return suggestedUsers.map((user, idx) => (
+                                    <button
+                                        key={user.id}
+                                        onClick={() => insertMention(user.username)}
+                                        className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 transition-colors ${idx === mentionIndex
+                                            ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+                                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                            }`}
+                                    >
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center overflow-hidden text-xs font-bold flex-shrink-0 ${user.id === 'chatgpt-bot' ? 'bg-indigo-500 text-white' : 'bg-slate-200 dark:bg-slate-600'}`}>
+                                            {user.id === 'chatgpt-bot' ? <Sparkles size={14} /> : (user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.username[0].toUpperCase())}
+                                        </div>
+                                        <span className="truncate flex-1">{user.username} {user.id === 'chatgpt-bot' && <span className="text-xs opacity-70 ml-1">(IA)</span>}</span>
+                                    </button>
+                                ));
+                            })()}
+                        </div>
+                    )}
+
+                    <div className={`flex items-center space-x-2 bg-white dark:bg-slate-900 p-2 border border-slate-300 dark:border-slate-600 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all ${(replyToMessage || editingMessageId) ? 'rounded-b-xl border-t-0' : 'rounded-xl'}`}>
+
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="p-2 text-slate-600 dark:text-slate-400 hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+                            title="Anexar imagem ou vídeo"
+                        >
+                            <Paperclip size={18} />
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            className="hidden"
+                            accept="image/*,video/*"
+                        />
+
+                        <input
+                            type="text"
+                            value={inputValue}
+                            onChange={handleInputChange}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey && !showMentions) {
+                                    handleSendMessage();
+                                }
+                                handleKeyDown(e);
+                            }}
+                            onPaste={handlePaste}
+                            placeholder={isEmbedded ? "Mensagem..." : "Digite sua mensagem... use @ para mencionar"}
+                            className="flex-1 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 px-2 focus:outline-none min-w-0 text-sm transition-colors"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleSendMessage}
+                            disabled={!inputValue.trim() && !attachment}
+                            className={`p-2 text-white rounded-lg transition-colors flex-shrink-0 ${editingMessageId ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-500'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                            {editingMessageId ? <Check size={18} /> : <Send size={18} />}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

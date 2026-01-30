@@ -21,7 +21,8 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [configError, setConfigError] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [navParams, setNavParams] = useState<any>(null);
+
 
   useEffect(() => {
     // Listen for Firebase Auth changes
@@ -62,57 +63,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Subscribe to chat messages to count unread and play sound
-  useEffect(() => {
-    if (!currentUser?.companyId) return;
 
-    // Get last read timestamp from localStorage
-    const getLastReadTime = () => {
-      const stored = localStorage.getItem(`chat-last-read-${currentUser.companyId}`);
-      return stored ? parseInt(stored) : Date.now();
-    };
-
-    let lastReadTime = getLastReadTime();
-    let previousMessageCount = 0;
-
-    const unsubscribe = storageService.subscribeChat(
-      currentUser.companyId,
-      'global',
-      (messages) => {
-        if (currentView === 'CHAT') {
-          // User is viewing chat - mark all as read
-          lastReadTime = Date.now();
-          localStorage.setItem(`chat-last-read-${currentUser.companyId}`, lastReadTime.toString());
-          setUnreadCount(0);
-        } else {
-          // Count messages from others received after last read time
-          const unread = messages.filter(
-            (msg) =>
-              msg.userId !== currentUser.id &&
-              msg.isAi !== true &&
-              msg.timestamp > lastReadTime
-          ).length;
-          setUnreadCount(unread);
-        }
-
-        // Play sound for new messages from others (regardless of view)
-        if (previousMessageCount > 0 && messages.length > previousMessageCount) {
-          const newMessages = messages.slice(previousMessageCount);
-
-          newMessages.forEach(msg => {
-            // Only play sound for messages from other users (not me, not AI)
-            if (msg.userId !== currentUser.id && msg.isAi !== true) {
-              notificationService.playSound();
-            }
-          });
-        }
-
-        previousMessageCount = messages.length;
-      }
-    );
-
-    return () => unsubscribe();
-  }, [currentUser, currentView]);
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
@@ -141,6 +92,17 @@ const App: React.FC = () => {
         alert("Erro ao salvar dados. Tente recarregar a página.");
       }
     }
+  };
+
+  const handleNavigate = (view: ViewState, params?: any) => {
+    setNavParams(params);
+    setCurrentView(view);
+  };
+
+  // Reset params when manually switching views via sidebar
+  const handleViewChange = (view: ViewState) => {
+    setNavParams(null);
+    setCurrentView(view);
   };
 
   const copyRules = () => {
@@ -249,29 +211,46 @@ service cloud.firestore {
 
 
   return (
-    <Layout
-      currentUser={currentUser}
-      currentView={currentView}
-      onChangeView={setCurrentView}
-      onLogout={handleLogout}
-      onUpdateUser={handleUpdateUser}
-      unreadCount={unreadCount}
-    >
-      {currentView === 'TIME_CLOCK' && <TimeTracker currentUser={currentUser} companyId={currentUser.companyId} />}
-      {currentView === 'PROJECTS' && <Kanban currentUser={currentUser} companyId={currentUser.companyId} />}
-      {currentView === 'CHAT' && <Chat currentUser={currentUser} companyId={currentUser.companyId} projectId="global" />}
-      {currentView === 'FINANCE' && (
-        <div key="finance-view" className="h-full w-full">
-          <FinanceDashboard currentUser={currentUser} companyId={currentUser.companyId} />
-        </div>
-      )}
-      {currentView === 'TEAM' && <TeamManagement currentUser={currentUser} companyId={currentUser.companyId} />}
-      {currentView === 'CRM' && <CRMLayout currentUser={currentUser} companyId={currentUser.companyId} onUpdateUser={handleUpdateUser} />}
-      {/* Super Admin Route */}
-      {currentView === 'SUPER_ADMIN_DASHBOARD' && currentUser.role === 'SUPER_ADMIN' && (
-        <SuperAdminDashboard currentUser={currentUser} />
-      )}
-    </Layout>
+    <>
+      <Layout
+        currentUser={currentUser}
+        currentView={currentView}
+        onChangeView={handleViewChange}
+        onLogout={handleLogout}
+        onUpdateUser={handleUpdateUser}
+        onNavigate={handleNavigate}
+      >
+        {currentView === 'TIME_CLOCK' && <TimeTracker currentUser={currentUser} companyId={currentUser.companyId} />}
+        {currentView === 'PROJECTS' && (
+          <Kanban
+            currentUser={currentUser}
+            companyId={currentUser.companyId}
+            initialProjectId={navParams?.projectId}
+            initialShowChat={navParams?.showChat}
+          />
+        )}
+        {currentView === 'CHAT' && (
+          <Chat
+            currentUser={currentUser}
+            companyId={currentUser.companyId}
+            projectId={navParams?.projectId || "global"}
+            initialTargetId={navParams?.targetId}
+            title={navParams?.title} // Pass the title
+          />
+        )}
+        {currentView === 'FINANCE' && (
+          <div key="finance-view" className="h-full w-full">
+            <FinanceDashboard currentUser={currentUser} companyId={currentUser.companyId} />
+          </div>
+        )}
+        {currentView === 'TEAM' && <TeamManagement currentUser={currentUser} companyId={currentUser.companyId} />}
+        {currentView === 'CRM' && <CRMLayout currentUser={currentUser} companyId={currentUser.companyId} onUpdateUser={handleUpdateUser} />}
+        {/* Super Admin Route */}
+        {currentView === 'SUPER_ADMIN_DASHBOARD' && currentUser.role === 'SUPER_ADMIN' && (
+          <SuperAdminDashboard currentUser={currentUser} />
+        )}
+      </Layout>
+    </>
   );
 };
 
