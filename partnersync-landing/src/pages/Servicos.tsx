@@ -79,7 +79,7 @@ const Servicos: React.FC = () => {
 
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="animate-fadeInUp">
-                        <span className="inline-block px-4 py-2 bg-white border border-primary/10 text-primary font-bold text-xs rounded-full mb-8 shadow-sm tracking-widest uppercase">
+                        <span className="inline-block px-4 py-2 bg-bg-tertiary border border-primary/10 text-primary font-bold text-xs rounded-full mb-8 shadow-sm tracking-widest uppercase">
                             Especialistas em Crescimento
                         </span>
                         <h1 className="text-text-primary mb-8 max-w-[900px] mx-auto text-4xl md:text-6xl lg:text-7xl font-black leading-tight tracking-tight">
@@ -107,10 +107,10 @@ const Servicos: React.FC = () => {
                         {processSteps.map((step, index) => (
                             <div
                                 key={index}
-                                className="bg-white p-10 rounded-3xl border border-border relative transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-primary/30 animate-fadeInUp group z-10"
+                                className="bg-bg-tertiary p-10 rounded-3xl border border-border relative transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-primary/30 animate-fadeInUp group z-10"
                                 style={{ animationDelay: `${index * 0.15}s` }}
                             >
-                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-bg-secondary to-white border border-border flex items-center justify-center text-4xl font-black text-text-primary mb-8 shadow-inner group-hover:scale-110 transition-transform duration-300 mx-auto md:mx-0">
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-bg-secondary to-bg-tertiary border border-border flex items-center justify-center text-4xl font-black text-text-primary mb-8 shadow-inner group-hover:scale-110 transition-transform duration-300 mx-auto md:mx-0">
                                     <span className="bg-clip-text text-transparent bg-gradient-primary">{step.step}</span>
                                 </div>
                                 <h3 className="text-2xl font-bold mb-4 text-text-primary group-hover:text-primary transition-colors">{step.title}</h3>
@@ -123,7 +123,7 @@ const Servicos: React.FC = () => {
 
             {/* SERVICES GRID */}
             <section className="section py-24 bg-bg-secondary relative">
-                <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30 pointer-events-none"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-5 pointer-events-none"></div>
 
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="text-center mb-16 animate-fadeInUp">
@@ -136,8 +136,8 @@ const Servicos: React.FC = () => {
                             <div
                                 key={index}
                                 className={`
-                                    flex flex-col p-8 bg-white/80 backdrop-blur-sm border border-border rounded-3xl transition-all duration-300 h-full hover:shadow-2xl hover:border-primary/30 animate-fadeInUp group
-                                    ${service.highlight ? 'border-primary ring-4 ring-primary/5 shadow-xl scale-[1.02] z-10' : 'hover:-translate-y-1'}
+                                    flex flex-col p-8 bg-bg-tertiary backdrop-blur-sm border border-border rounded-3xl transition-all duration-300 h-full hover:shadow-2xl hover:border-primary/30 animate-fadeInUp group
+                                    ${service.highlight ? 'border-primary ring-4 ring-primary/10 shadow-xl scale-[1.02] z-10' : 'hover:-translate-y-1'}
                                     ${service.fullWidth ? 'lg:col-span-full lg:grid lg:grid-cols-[1fr_1fr_250px] lg:items-center lg:gap-12 lg:text-left' : ''}
                                 `}
                             >
@@ -187,8 +187,8 @@ const Servicos: React.FC = () => {
                                     <a
                                         href="/contato"
                                         className={`w-full flex items-center justify-center px-6 py-4 rounded-xl font-bold transition-all duration-300 ${service.highlight
-                                            ? 'bg-primary text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-1'
-                                            : 'bg-white border-2 border-primary/10 text-primary hover:border-primary hover:bg-primary hover:text-white'
+                                            ? 'bg-accent text-white shadow-lg shadow-accent/25 hover:shadow-accent/40 hover:-translate-y-1'
+                                            : 'bg-transparent border-2 border-primary text-primary hover:bg-primary/10 hover:border-primary hover:text-primary-light'
                                             }`}
                                     >
                                         Solicitar Análise
@@ -217,7 +217,7 @@ const Servicos: React.FC = () => {
                             <a href="/contato" className="btn btn-primary btn-lg inline-flex shadow-xl shadow-primary/20">Agendar Diagnóstico Gratuito</a>
                         </div>
                         <div className="hidden md:flex flex-1 justify-center relative z-10">
-                            <div className="bg-white p-10 rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] text-center border border-border/50 animate-[float_6s_ease-in-out_infinite] w-full max-w-sm">
+                            <div className="bg-bg-tertiary p-10 rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] text-center border border-border/50 animate-[float_6s_ease-in-out_infinite] w-full max-w-sm">
                                 <div className="text-6xl mb-2">📈</div>
                                 <span className="block text-6xl font-black text-transparent bg-clip-text bg-gradient-primary leading-tight mb-2">4.8x</span>
                                 <span className="text-sm uppercase tracking-widest text-text-tertiary font-bold">Retorno Médio (ROAS)</span>

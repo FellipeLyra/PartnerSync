@@ -60,8 +60,8 @@ const FAQ: React.FC = () => {
                             <div
                                 key={index}
                                 className={`
-                                    rounded-2xl p-6 cursor-pointer transition-all duration-300 bg-white border border-border glass group
-                                    ${openIndex === index ? 'border-primary shadow-md' : 'hover:shadow-md hover:border-primary-light'}
+                                    rounded-2xl p-6 cursor-pointer transition-all duration-300 bg-bg-tertiary border border-border glass group
+                                    ${openIndex === index ? 'border-primary shadow-md' : 'hover:shadow-md hover:border-primary/30'}
                                 `}
                                 onClick={() => toggleFAQ(index)}
                             >
@@ -84,7 +84,7 @@ const FAQ: React.FC = () => {
 
             <section className="section py-24">
                 <div className="container mx-auto px-6">
-                    <div className="glass rounded-2xl p-16 text-center border border-white/20">
+                    <div className="glass bg-bg-tertiary/30 backdrop-blur-md rounded-2xl p-16 text-center border border-white/10">
                         <h2 className="text-3xl font-bold mb-4">Ainda tem dúvidas?</h2>
                         <p className="text-lg text-text-secondary mb-8">Entre em contato conosco e teremos prazer em ajudar</p>
                         <a href="/contato" className="btn btn-primary btn-lg inline-flex">Falar com Especialista</a>

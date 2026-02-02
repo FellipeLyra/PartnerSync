@@ -44,8 +44,8 @@ const MarketingContent: React.FC = () => (
 );
 
 const FeatureBadge: React.FC<{ icon: React.ReactNode; color: string; title: string; text: string }> = ({ icon, color, title, text }) => (
-    <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-border/50">
-        <div className={`w-12 h-12 rounded-full bg-${color}-100 flex items-center justify-center text-${color}-600`}>
+    <div className="flex items-center gap-4 p-4 bg-bg-tertiary rounded-xl shadow-sm border border-border">
+        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${color === 'green' ? 'bg-success/20 text-success' : 'bg-primary/20 text-primary'}`}>
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {icon}
             </svg>
@@ -156,7 +156,7 @@ const InputField: React.FC<InputFieldProps> = ({ label, error, className, ...pro
         <label className="block text-sm font-medium text-text-secondary mb-1.5 ml-1">{label}</label>
         <input
             {...props}
-            className={`w-full px-4 py-3 rounded-xl border bg-bg-secondary/30 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all outline-none ${error ? 'border-error' : 'border-border focus:border-primary'} ${className || ''}`}
+            className={`w-full px-4 py-3 rounded-xl border bg-bg-secondary text-text-primary focus:bg-bg-tertiary focus:ring-2 focus:ring-primary/20 transition-all outline-none ${error ? 'border-error' : 'border-border focus:border-primary'} ${className || ''}`}
         />
         {error && <span className="text-error text-xs mt-1 ml-1">{error}</span>}
     </div>
@@ -203,7 +203,7 @@ const LeadFormContent: React.FC<LeadFormContentProps> = ({
     };
 
     return (
-        <div className={`bg-white rounded-3xl ${compact ? '' : 'shadow-2xl shadow-primary/10 border border-border/50'} overflow-hidden animate-fadeInUp h-full`}>
+        <div className={`bg-bg-tertiary rounded-3xl ${compact ? '' : 'shadow-2xl shadow-primary/10 border border-border'} overflow-hidden animate-fadeInUp h-full`}>
             {/* Added p-6 sm:p-8 for padding in compact mode to ensure it's not compressed */}
             <div className={`${compact ? 'p-6 sm:p-8' : 'p-8 sm:p-10'} h-full flex flex-col`}>
                 <ProgressBar step={step} />
@@ -212,7 +212,7 @@ const LeadFormContent: React.FC<LeadFormContentProps> = ({
                     <div className="flex-1">
                         {renderStep()}
                         {errors.submit && (
-                            <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm text-center">
+                            <div className="mt-4 p-3 bg-red-900/20 text-red-200 rounded-lg text-sm text-center border border-red-500/20">
                                 {errors.submit}
                             </div>
                         )}

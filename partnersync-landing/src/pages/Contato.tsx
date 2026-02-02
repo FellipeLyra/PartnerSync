@@ -43,8 +43,8 @@ const Contato: React.FC = () => {
                             </div>
 
                             <div className="grid gap-6">
-                                <a href="mailto:contato.lyradesign@gmail.com" className="group flex items-start p-6 bg-white rounded-2xl border border-border transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-1">
-                                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-2xl mr-6 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                                <a href="mailto:contato.lyradesign@gmail.com" className="group flex items-start p-6 bg-bg-tertiary rounded-2xl border border-border transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-1">
+                                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary text-2xl mr-6 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                                             <polyline points="22,6 12,13 2,6"></polyline>
@@ -56,20 +56,20 @@ const Contato: React.FC = () => {
                                     </div>
                                 </a>
 
-                                <a href="https://wa.me/5564992327984" target="_blank" rel="noopener noreferrer" className="group flex items-start p-6 bg-white rounded-2xl border border-border transition-all duration-300 hover:shadow-lg hover:border-success/30 hover:-translate-y-1">
-                                    <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 text-2xl mr-6 group-hover:bg-green-500 group-hover:text-white transition-colors duration-300">
+                                <a href="https://wa.me/5564992327984" target="_blank" rel="noopener noreferrer" className="group flex items-start p-6 bg-bg-tertiary rounded-2xl border border-border transition-all duration-300 hover:shadow-lg hover:border-success/30 hover:-translate-y-1">
+                                    <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center text-success text-2xl mr-6 group-hover:bg-success group-hover:text-black transition-colors duration-300">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 className="text-lg font-bold text-text-primary mb-1 group-hover:text-green-600 transition-colors">WhatsApp</h4>
+                                        <h4 className="text-lg font-bold text-text-primary mb-1 group-hover:text-success transition-colors">WhatsApp</h4>
                                         <p className="text-text-secondary">(64) 99232-7984</p>
                                     </div>
                                 </a>
 
-                                <div className="flex items-start p-6 bg-white rounded-2xl border border-border transition-all duration-300 hover:shadow-lg hover:border-border">
-                                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 text-2xl mr-6">
+                                <div className="flex items-start p-6 bg-bg-tertiary rounded-2xl border border-border transition-all duration-300 hover:shadow-lg hover:border-border">
+                                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-text-secondary text-2xl mr-6">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                                             <circle cx="12" cy="10" r="3"></circle>
@@ -86,7 +86,7 @@ const Contato: React.FC = () => {
                         {/* Form Wrapper */}
                         <div className="relative">
                             <div className="absolute inset-0 bg-gradient-primary opacity-5 rounded-3xl blur-2xl transform rotate-3 scale-105 pointer-events-none"></div>
-                            <div className="relative bg-white rounded-3xl border border-border overflow-hidden shadow-2xl">
+                            <div className="relative bg-bg-tertiary rounded-3xl border border-border overflow-hidden shadow-2xl">
                                 <div className="p-8 border-b border-border bg-bg-secondary/30">
                                     <h3 className="text-2xl font-bold text-center">Envie uma Mensagem</h3>
                                 </div>

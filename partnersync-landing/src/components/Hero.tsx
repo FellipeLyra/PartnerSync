@@ -51,7 +51,7 @@ const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
                         </button>
                         <Link
                             to="/cases"
-                            className="px-8 py-4 text-text-primary font-semibold text-lg bg-white border-2 border-border/50 rounded-xl hover:border-primary/30 hover:bg-bg-secondary transition-all duration-300 w-full sm:w-auto"
+                            className="px-8 py-4 text-primary font-semibold text-lg bg-transparent border-2 border-primary rounded-xl hover:bg-primary/10 transition-all duration-300 w-full sm:w-auto flex justify-center"
                         >
                             Ver Cases de Sucesso
                         </Link>

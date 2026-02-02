@@ -15,7 +15,7 @@ const Navbar: React.FC = () => {
     }, []);
 
     return (
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-lg shadow-black/5 py-4' : 'bg-transparent py-6'}`}>
+        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-secondary/90 backdrop-blur-md shadow-lg shadow-black/20 py-4' : 'bg-transparent py-6'}`}>
             <div className="container mx-auto px-6 flex items-center justify-between">
                 <Link to="/" className="flex items-center gap-2 group z-50 relative">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 overflow-hidden">
@@ -31,7 +31,7 @@ const Navbar: React.FC = () => {
                 </Link>
 
                 {/* Desktop Menu */}
-                <div className="hidden lg:flex items-center gap-10 bg-white/50 backdrop-blur-sm px-8 py-3 rounded-full border border-white/20 shadow-sm">
+                <div className="hidden lg:flex items-center gap-10 bg-white/5 backdrop-blur-sm px-8 py-3 rounded-full border border-white/10 shadow-sm">
                     {['Serviços', 'Portfólio', 'Cases', 'Sobre'].map((item) => (
                         <Link
                             key={item}
@@ -45,7 +45,7 @@ const Navbar: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <Link to="/contato" className="hidden sm:inline-flex items-center gap-2 px-6 py-3 bg-text-primary text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:bg-primary hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5">
+                    <Link to="/contato" className="hidden sm:inline-flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:bg-accent-dark hover:shadow-lg hover:shadow-accent/25 hover:-translate-y-0.5">
                         <span>Começar Agora</span>
                         <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none">
                             <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
