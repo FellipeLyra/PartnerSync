@@ -39,6 +39,10 @@ export const useLeadForm = (): UseLeadFormReturn => {
                 newErrors.email = 'Email inválido';
             }
             if (!formData.phone.trim()) newErrors.phone = 'Telefone é obrigatório para contato';
+        } else if (currentStep === 2) {
+            if (!(formData.organizationName || '').trim()) newErrors.organizationName = 'Nome da empresa é obrigatório';
+        } else if (currentStep === 3) {
+            if (!(formData.interest || '').trim()) newErrors.interest = 'Por favor, informe seu interesse';
         }
 
         setErrors(newErrors);
@@ -73,8 +77,23 @@ export const useLeadForm = (): UseLeadFormReturn => {
     const handleSubmit = async (e: React.FormEvent, onSuccess: () => void) => {
         e.preventDefault();
 
+        if (step < 3) {
+            handleNext();
+            return;
+        }
+
+        // Validate Step 3 before submitting
+        if (!validateStep(3)) {
+            return;
+        }
+
+        // Full validation check (sanity check)
         if (!validateStep(1)) {
             setStep(1);
+            return;
+        }
+        if (!validateStep(2)) {
+            setStep(2);
             return;
         }
 

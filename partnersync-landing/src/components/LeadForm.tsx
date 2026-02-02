@@ -98,7 +98,7 @@ const StepOne: React.FC<StepProps> = ({ formData, handleChange, errors }) => (
     </div>
 );
 
-const StepTwo: React.FC<StepProps> = ({ formData, handleChange }) => (
+const StepTwo: React.FC<StepProps> = ({ formData, handleChange, errors }) => (
     <div className="animate-fadeIn space-y-5">
         <h3 className="text-2xl font-bold text-center mb-6">Sua Empresa</h3>
         <InputField
@@ -107,7 +107,7 @@ const StepTwo: React.FC<StepProps> = ({ formData, handleChange }) => (
             value={formData.organizationName}
             onChange={handleChange}
             placeholder="Nome da sua empresa"
-            error=""
+            error={errors.organizationName}
         />
         <InputField
             label="Instagram Comercial"
@@ -115,12 +115,12 @@ const StepTwo: React.FC<StepProps> = ({ formData, handleChange }) => (
             value={formData.role}
             onChange={handleChange}
             placeholder="@suamarca"
-            error=""
+            error={errors.role}
         />
     </div>
 );
 
-const StepThree: React.FC<StepProps> = ({ formData, handleChange }) => (
+const StepThree: React.FC<StepProps> = ({ formData, handleChange, errors }) => (
     <div className="animate-fadeIn space-y-5">
         <h3 className="text-2xl font-bold text-center mb-6">Objetivos</h3>
         <InputField
@@ -129,7 +129,7 @@ const StepThree: React.FC<StepProps> = ({ formData, handleChange }) => (
             value={formData.interest}
             onChange={handleChange}
             placeholder="Ex: Tráfego Pago, Gestão de Redes..."
-            error=""
+            error={errors.interest}
         />
         <div>
             <label className="block text-sm font-medium text-text-secondary mb-1.5 ml-1">Desafios Atuais</label>

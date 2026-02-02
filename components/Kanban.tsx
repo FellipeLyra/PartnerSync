@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, FolderPlus, List, Calendar, Paperclip, AlertCircle, Edit2, X, Image as ImageIcon, Video, Settings, Save, MessageSquare, GripHorizontal, Columns } from 'lucide-react';
-import { Project, Task, TaskStatus, TaskPriority, User, Column, DEFAULT_STATUSES } from '../types';
+import { FolderPlus, List, MessageSquare, Columns, Settings, AlertCircle } from 'lucide-react';
+import { DEFAULT_STATUSES } from '../types';
+import type { Project, Task, TaskStatus, TaskPriority, User, Column } from '../types';
 import { storageService } from '../services/storageService';
+import { KanbanColumn } from './kanban/KanbanColumn';
+import { TaskModal } from './kanban/TaskModal';
 import Chat from './Chat';
 
 interface KanbanProps {
-    currentUser?: User; // Optional initially but usually required for chat
+    currentUser?: User;
     companyId: string;
     initialProjectId?: string;
     initialShowChat?: boolean;
@@ -18,7 +21,12 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
     // Modals State
     const [showNewProjectModal, setShowNewProjectModal] = useState(false);
     const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+
+    // Task Modal State
     const [showTaskModal, setShowTaskModal] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>(DEFAULT_STATUSES.TODO);
+
     const [showProjectChat, setShowProjectChat] = useState(false);
 
     // Data State
@@ -31,39 +39,16 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
     const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
     const [draggedColumnId, setDraggedColumnId] = useState<string | null>(null);
 
-    // Task Editing/Creating State
-    const [editingTask, setEditingTask] = useState<Task | null>(null);
-    const [taskForm, setTaskForm] = useState<{
-        content: string;
-        description: string;
-        priority: TaskPriority;
-        dueDate: string;
-        mediaUrl: string;
-        status: TaskStatus;
-    }>({
-        content: '',
-        description: '',
-        priority: 'MEDIUM',
-        dueDate: '',
-        mediaUrl: '',
-        status: DEFAULT_STATUSES.TODO
-    });
-
-    // Drag and Drop State
-    const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-
-    // Real-time subscription to Firebase
+    // Filtered Projects based on permissions
     useEffect(() => {
         if (!companyId) return;
         const unsubscribe = storageService.subscribeProjects(companyId, (loadedProjects) => {
-            // Permission Filtering
             const visibleProjects = loadedProjects.filter(p => {
                 if (!currentUser) return true;
                 if (currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN') return true;
-                if (!currentUser.permissions) return true; // Default to allow all if no permissions set
+                if (!currentUser.permissions) return true;
 
                 const { allowedProjectIds } = currentUser.permissions;
-                // If undefined, allow all. If array, must include.
                 if (allowedProjectIds === undefined) return true;
                 return allowedProjectIds.includes(p.id);
             });
@@ -71,25 +56,16 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
             setProjects(visibleProjects);
 
             setActiveProjectId(currentId => {
-                // 1. If we have a deep-linked project valid in this new list, USE IT.
                 if (initialProjectId && visibleProjects.some(p => p.id === initialProjectId)) {
                     return initialProjectId;
                 }
-
-                // Try to recover from localStorage
                 const savedId = localStorage.getItem('lastActiveProjectId');
-
-                // If we have an active ID and it still exists in VISIBLE projects, keep it
                 if (currentId && visibleProjects.find(p => p.id === currentId)) {
                     return currentId;
                 }
-
-                // If no current ID, but we have a saved one that is valid, use it
                 if (!currentId && savedId && visibleProjects.find(p => p.id === savedId)) {
                     return savedId;
                 }
-
-                // Otherwise, switch to the first available VISIBLE project
                 if (visibleProjects.length > 0) {
                     return visibleProjects[0].id;
                 }
@@ -99,26 +75,23 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
         return () => unsubscribe();
     }, [companyId, currentUser, initialProjectId]);
 
-    // Handle Deep Linking Chat Toggle
     useEffect(() => {
         if (initialProjectId && activeProjectId === initialProjectId && initialShowChat) {
             setShowProjectChat(true);
         }
     }, [activeProjectId, initialProjectId, initialShowChat]);
 
-    // Save active project to localStorage
     useEffect(() => {
         if (activeProjectId) {
             localStorage.setItem('lastActiveProjectId', activeProjectId);
         }
     }, [activeProjectId]);
 
-    // Close chat when switching projects
     useEffect(() => {
         setShowProjectChat(false);
     }, [activeProjectId]);
 
-    // --- Project Management ---
+    // --- Project Actions ---
 
     const handleCreateProject = async () => {
         if (!newProjectName.trim()) return;
@@ -130,7 +103,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
         ];
 
         const newProject: Project = {
-            id: '', // Generated by Firestore or ignored
+            id: '',
             companyId: companyId,
             name: newProjectName,
             description: '',
@@ -142,11 +115,8 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
         const newId = await storageService.createProject(newProject);
         setNewProjectName('');
         setShowNewProjectModal(false);
-        if (newId) {
-            setActiveProjectId(newId);
-        }
+        if (newId) setActiveProjectId(newId);
     };
-
 
     const openEditProjectModal = () => {
         const project = projects.find(p => p.id === activeProjectId);
@@ -157,58 +127,38 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
 
     const handleUpdateProject = async () => {
         if (!editProjectForm.name.trim()) return;
-
         const project = projects.find(p => p.id === activeProjectId);
         if (!project) return;
 
         try {
-            const updatedProject = { ...project, name: editProjectForm.name, description: editProjectForm.description };
-            await storageService.updateProject(updatedProject);
+            await storageService.updateProject({ ...project, name: editProjectForm.name, description: editProjectForm.description });
             setShowEditProjectModal(false);
         } catch (e) {
-            alert("Erro ao atualizar projeto. Verifique o console.");
+            alert("Erro ao atualizar projeto.");
         }
     };
 
     const handleDeleteProject = async (e: React.MouseEvent) => {
-        // Prevent event bubbling
         e.preventDefault();
         e.stopPropagation();
-
-        if (!activeProjectId) {
-            alert("Nenhum projeto selecionado.");
-            return;
-        }
-
-        // REMOVIDO CONFIRM PROVISORIAMENTE
-        // if (!window.confirm('ATENÇÃO: Isso apagará o projeto e todas as tarefas permanentemente. Continuar?')) return;
+        if (!activeProjectId) return;
 
         const projectToDeleteId = activeProjectId;
-
-        // 1. Close Modal Immediately
         setShowEditProjectModal(false);
 
-        // 2. Optimistic Update (Switch view immediately)
         const remaining = projects.filter(p => p.id !== projectToDeleteId);
         setProjects(remaining);
-
-        if (remaining.length > 0) {
-            setActiveProjectId(remaining[0].id);
-        } else {
-            setActiveProjectId('');
-        }
+        setActiveProjectId(remaining.length > 0 ? remaining[0].id : '');
 
         try {
-            // 3. Perform actual deletion
             await storageService.deleteProject(projectToDeleteId);
-            console.log("Project deleted:", projectToDeleteId);
         } catch (err) {
             console.error(err);
-            alert("Erro ao excluir projeto no banco de dados. Recarregue a página.");
+            alert("Erro ao excluir projeto.");
         }
     };
 
-    // --- Column Management ---
+    // --- Column Actions ---
 
     const getEffectiveColumns = (project?: Project): Column[] => {
         if (!project) return [];
@@ -222,12 +172,6 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
         ];
     };
 
-    const openEditColumnModal = (col: Column) => {
-        setNewColumnForm({ title: col.title, colorClass: col.colorClass });
-        setEditingColumnId(col.id);
-        setShowAddColumnModal(true);
-    };
-
     const handleSaveColumn = async () => {
         if (!newColumnForm.title.trim() || !activeProjectId) return;
         const project = projects.find(p => p.id === activeProjectId);
@@ -237,14 +181,12 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
         let updatedColumns = [...currentColumns];
 
         if (editingColumnId) {
-            // Update existing
             updatedColumns = updatedColumns.map(c =>
                 c.id === editingColumnId
                     ? { ...c, title: newColumnForm.title, colorClass: newColumnForm.colorClass }
                     : c
             );
         } else {
-            // Create new
             const newId = `col-${Date.now()}`;
             const newColumn: Column = {
                 id: newId,
@@ -255,14 +197,10 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
             updatedColumns.push(newColumn);
         }
 
-        try {
-            await storageService.updateProject({ ...project, columns: updatedColumns });
-            setShowAddColumnModal(false);
-            setNewColumnForm({ title: '', colorClass: 'text-indigo-400' });
-            setEditingColumnId(null);
-        } catch (e) {
-            alert("Erro ao salvar coluna.");
-        }
+        await storageService.updateProject({ ...project, columns: updatedColumns });
+        setShowAddColumnModal(false);
+        setNewColumnForm({ title: '', colorClass: 'text-indigo-400' });
+        setEditingColumnId(null);
     };
 
     const handleDeleteColumn = async (colId: string) => {
@@ -270,25 +208,12 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
         const project = projects.find(p => p.id === activeProjectId);
         if (!project) return;
 
-        // Optional: Warn if tasks exist in this column?
-        // For now, we keep tasks but they become "invisible" until moved? 
-        // Or we move them to the first column? Let's keep simpler logic for now (tasks stay but hidden).
-        // Better: Move tasks to the first remaining column.
-
         const currentColumns = getEffectiveColumns(project);
         const updatedColumns = currentColumns.filter(c => c.id !== colId);
-
-        // Reorder
         updatedColumns.forEach((c, idx) => c.order = idx);
 
-        try {
-            await storageService.updateProject({ ...project, columns: updatedColumns });
-        } catch (e) {
-            alert("Erro ao deletar coluna.");
-        }
+        await storageService.updateProject({ ...project, columns: updatedColumns });
     };
-
-    // --- Column Drag and Drop ---
 
     const handleColumnDragStart = (e: React.DragEvent, colId: string) => {
         setDraggedColumnId(colId);
@@ -303,7 +228,6 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
         if (!project) return;
 
         const columns = [...getEffectiveColumns(project)];
-
         const dragIdx = columns.findIndex(c => c.id === draggedColumnId);
         const targetIdx = columns.findIndex(c => c.id === targetColId);
 
@@ -311,131 +235,77 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
 
         const [movedCol] = columns.splice(dragIdx, 1);
         columns.splice(targetIdx, 0, movedCol);
-
-        // Reassign order
         columns.forEach((c, idx) => c.order = idx);
 
         setDraggedColumnId(null);
         await storageService.updateProject({ ...project, columns });
     };
 
-    // --- Task Management ---
+    // --- Task Actions ---
 
-    const openTaskModal = (task?: Task, defaultStatus: TaskStatus = DEFAULT_STATUSES.TODO) => {
-        if (task) {
-            setEditingTask(task);
-            setTaskForm({
-                content: task.content,
-                description: task.description || '',
-                priority: task.priority,
-                dueDate: task.dueDate || '',
-                mediaUrl: task.mediaUrl || '',
-                status: task.status
-            });
-        } else {
-            setEditingTask(null);
-            setTaskForm({
-                content: '',
-                description: '',
-                priority: 'MEDIUM',
-                dueDate: '',
-                mediaUrl: '',
-                status: defaultStatus
-            });
-        }
+    // 1. Prepare Modal
+    const handleOpenTaskModal = (task?: Task, defaultStatus: TaskStatus = DEFAULT_STATUSES.TODO) => {
+        setEditingTask(task || null);
+        setNewTaskStatus(task ? task.status : defaultStatus);
         setShowTaskModal(true);
     };
 
-    const handleSaveTask = async () => {
-        if (!taskForm.content.trim() || !activeProjectId) return;
+    // 2. Save Logic (Called by TaskModal)
+    const handleSaveTask = async (taskData: Partial<Task>) => {
+        if (!activeProjectId) return;
         const project = projects.find(p => p.id === activeProjectId);
         if (!project) return;
 
         let updatedTasks = [...project.tasks];
 
         if (editingTask) {
-            // Update existing
             updatedTasks = updatedTasks.map(t =>
-                t.id === editingTask.id
-                    ? {
-                        ...t,
-                        content: taskForm.content,
-                        description: taskForm.description,
-                        priority: taskForm.priority,
-                        dueDate: taskForm.dueDate,
-                        mediaUrl: taskForm.mediaUrl
-                    }
-                    : t
+                t.id === editingTask.id ? { ...t, ...taskData } : t
             );
         } else {
-            // Create new
             const newTask: Task = {
                 id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                content: taskForm.content,
-                description: taskForm.description,
-                status: taskForm.status,
-                priority: taskForm.priority,
-                dueDate: taskForm.dueDate,
-                mediaUrl: taskForm.mediaUrl,
+                content: taskData.content || '',
+                description: taskData.description,
+                status: taskData.status || newTaskStatus,
+                priority: taskData.priority || 'MEDIUM',
+                dueDate: taskData.dueDate,
+                mediaUrl: taskData.mediaUrl,
                 createdAt: Date.now(),
             };
             updatedTasks.push(newTask);
         }
 
-        try {
-            await storageService.updateProject({ ...project, tasks: updatedTasks });
-            setShowTaskModal(false);
-        } catch (e) {
-            alert("Erro ao salvar tarefa.");
-        }
+        await storageService.updateProject({ ...project, tasks: updatedTasks });
     };
 
     const handleDeleteTask = async (taskId: string) => {
-        // REMOVIDO CONFIRM PROVISORIAMENTE PARA TESTE
-        // if (!window.confirm('Excluir esta tarefa?')) return;
-
-        // Safety check: find project dynamically at time of deletion
         const project = projects.find(p => p.id === activeProjectId);
-        if (!project) {
-            console.error("Project not found during deletion");
-            return;
-        }
-
-        // Optimistic Update
+        if (!project) return;
         const newTasks = project.tasks.filter(t => t.id !== taskId);
-
-        // Update local state immediately for responsiveness
         setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, tasks: newTasks } : p));
-
-        try {
-            // IMPORTANT: We send the project ID and the new list of tasks
-            // We use { ...project } to ensure we have the ID and all other fields
-            await storageService.updateProject({ ...project, tasks: newTasks });
-            console.log("Deleted task successfully", taskId);
-        } catch (err) {
-            console.error("Erro ao excluir tarefa:", err);
-            alert("Erro ao excluir tarefa. Verifique sua conexão.");
-        }
+        await storageService.updateProject({ ...project, tasks: newTasks });
     };
 
-    // --- Drag and Drop Logic ---
+    // --- Drag and Drop (Task) ---
+    // Kept simplified in Kanban, but logic delegated to specific handlers
 
-    const handleDragStart = (e: React.DragEvent, taskId: string) => {
-        // Simplificado: Como agora só arrastamos pela alça (handle),
-        // não precisamos verificar se o target é um botão.
+    const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+
+    const handleTaskDragStart = (e: React.DragEvent, taskId: string) => {
         setDraggedTaskId(taskId);
         e.dataTransfer.effectAllowed = 'move';
-        // Parar propagação para garantir
         e.stopPropagation();
     };
 
-    const handleDragOver = (e: React.DragEvent) => {
+    const handleTaskDragOver = (e: React.DragEvent) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
     };
 
-    const handleDropOnColumn = async (e: React.DragEvent, status: TaskStatus) => {
+    const handleTaskDropOnColumn = async (e: React.DragEvent, status: TaskStatus) => {
         e.preventDefault();
+        e.stopPropagation();
         if (!draggedTaskId || !activeProjectId) return;
 
         const project = projects.find(p => p.id === activeProjectId);
@@ -450,7 +320,7 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
         setDraggedTaskId(null);
     };
 
-    const handleDropOnCard = async (e: React.DragEvent, targetTaskId: string, targetStatus: TaskStatus) => {
+    const handleTaskDropOnCard = async (e: React.DragEvent, targetTaskId: string, targetStatus: TaskStatus) => {
         e.stopPropagation();
         e.preventDefault();
 
@@ -467,203 +337,49 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
 
         const [movedTask] = tasksCopy.splice(draggedIndex, 1);
         movedTask.status = targetStatus;
+
+        // Find new index again because splice shifted things
         const newTargetIndex = tasksCopy.findIndex(t => t.id === targetTaskId);
+        // Insert *before* or *after*? Standard is usually before if moving up, or specific.
+        // Let's just insert at newTargetIndex to simplify.
         tasksCopy.splice(newTargetIndex, 0, movedTask);
 
         await storageService.updateProject({ ...project, tasks: tasksCopy });
         setDraggedTaskId(null);
     };
 
-    // --- Render Helpers ---
 
-    const getPriorityColor = (p: TaskPriority) => {
-        switch (p) {
-            case 'URGENT': return 'bg-purple-500 text-white border-purple-400';
-            case 'HIGH': return 'bg-red-500/20 text-red-400 border-red-500/30';
-            case 'MEDIUM': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-            case 'LOW': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-            default: return 'bg-slate-700 text-slate-300';
-        }
-    };
+    // --- Render ---
 
     const activeProject = projects.find((p) => p.id === activeProjectId);
 
-    const renderColumn = (status: TaskStatus, title: string, colorClass: string) => {
-        const tasks = activeProject?.tasks.filter((t) => t.status === status) || [];
-
-        return (
-            <div
-                className="flex flex-col h-full bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50 transition-colors"
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDropOnColumn(e, status)}
-            >
-                <div className={`p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between ${colorClass} bg-opacity-10 rounded-t-xl transition-colors`}>
-                    <h3 className={`font-bold ${colorClass}`}>{title}</h3>
-                    <span className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2 py-1 rounded-full transition-colors">{tasks.length}</span>
-                </div>
-
-                <div className="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar min-h-[150px]">
-                    {tasks.map((task) => {
-                        const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== DEFAULT_STATUSES.DONE;
-
-                        return (
-                            <div
-                                key={task.id}
-                                onDrop={(e) => handleDropOnCard(e, task.id, status)}
-                                onDragOver={handleDragOver}
-                                onClick={() => openTaskModal(task)}
-                                className="bg-white dark:bg-slate-700 p-4 pt-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all group hover:shadow-lg relative cursor-default mb-3"
-                            >
-                                {/* DRAG HANDLE - Separated from buttons, high z-index but lower than buttons */}
-                                <div
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, task.id)}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="absolute left-0 right-0 top-0 h-6 cursor-grab active:cursor-grabbing rounded-t-lg z-10 flex items-center justify-center hover:bg-white/5 transition-colors group-hover:opacity-100 opacity-0"
-                                    title="Arrastar Card"
-                                >
-                                    <GripHorizontal size={14} className="text-slate-500" />
-                                </div>
-
-                                {/* Priority Badge & Edit - z-index 20 ensures they are above drag handle */}
-                                <div className="flex justify-between items-start mb-2 relative z-20">
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getPriorityColor(task.priority)}`}>
-                                        {task.priority === 'URGENT' ? 'URGENTE' : task.priority === 'HIGH' ? 'ALTA' : task.priority === 'MEDIUM' ? 'MÉDIA' : 'BAIXA'}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onMouseDown={(e) => e.stopPropagation()}
-                                        onClick={(e) => { e.stopPropagation(); openTaskModal(task); }}
-                                        className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-600 transition-colors bg-slate-700/50"
-                                        title="Editar"
-                                    >
-                                        <Edit2 size={14} />
-                                    </button>
-                                </div>
-
-                                <p className="text-slate-900 dark:text-slate-200 font-medium text-sm mb-2 mt-1 transition-colors">{task.content}</p>
-
-                                {/* Visual Indicators */}
-                                <div className="flex flex-wrap gap-2 mb-2">
-                                    {task.description && <div title="Possui descrição"><List size={14} className="text-slate-400" /></div>}
-                                    {task.mediaUrl && (
-                                        task.mediaUrl.match(/\.(mp4|webm)$/i)
-                                            ? <div title="Vídeo anexado"><Video size={14} className="text-pink-400" /></div>
-                                            : <div title="Imagem anexada"><ImageIcon size={14} className="text-pink-400" /></div>
-                                    )}
-                                </div>
-
-                                {/* Media Preview (Small) */}
-                                {task.mediaUrl && (
-                                    <div className="mb-3 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 max-h-32 transition-colors">
-                                        {task.mediaUrl.match(/\.(mp4|webm)$/i) ? (
-                                            <video src={task.mediaUrl} className="w-full h-full object-cover opacity-80" muted />
-                                        ) : (
-                                            <img src={task.mediaUrl} alt="attachment" className="w-full h-full object-cover opacity-80" />
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Footer Info */}
-                                <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-600/50 relative z-20 transition-colors">
-                                    <div className={`flex items-center text-xs ${isOverdue ? 'text-red-400 font-bold' : 'text-slate-600 dark:text-slate-400'} transition-colors`}>
-                                        <Calendar size={12} className="mr-1" />
-                                        {task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR') : 'Sem prazo'}
-                                    </div>
-
-                                    {/* Fixed Delete Button */}
-                                    <button
-                                        type="button"
-                                        className="text-slate-500 dark:text-slate-500 hover:text-red-400 hover:bg-slate-200 dark:hover:bg-slate-600/50 p-1.5 rounded transition-colors cursor-pointer"
-                                        onMouseDown={(e) => {
-                                            e.stopPropagation(); // Stops drag interference
-                                        }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            handleDeleteTask(task.id);
-                                        }}
-                                        title="Excluir Tarefa"
-                                    >
-                                        <Trash2 size={15} />
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })}
-
-                    <button
-                        type="button"
-                        onClick={() => openTaskModal(undefined, status)}
-                        className="w-full py-2 border-2 border-dashed border-slate-700 rounded-lg text-slate-500 hover:text-indigo-400 hover:border-indigo-500/50 hover:bg-slate-700/30 transition-all flex items-center justify-center text-sm font-medium"
-                    >
-                        <Plus size={16} className="mr-2" /> Adicionar Card
-                    </button>
-                </div>
-            </div>
-        );
-    };
-
     return (
         <div className="flex h-full flex-col relative overflow-hidden bg-white dark:bg-slate-900 transition-colors">
-            {/* Header */}
+            {/* Header (Simplified) */}
             <header className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex items-center justify-between flex-shrink-0 transition-colors">
                 <div className="flex items-center space-x-3">
                     <List className="text-indigo-400" />
                     <select
                         className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 min-w-[200px] transition-colors"
                         value={activeProjectId}
-                        onChange={(e) => {
-                            setActiveProjectId(e.target.value);
-                            setShowProjectChat(false);
-                        }}
+                        onChange={(e) => setActiveProjectId(e.target.value)}
                     >
                         {projects.length === 0 && <option value="">Sem projetos</option>}
                         {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
-                    {/* Add Column Button */}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setEditingColumnId(null);
-                            setNewColumnForm({ title: '', colorClass: 'text-indigo-400' });
-                            setShowAddColumnModal(true);
-                        }}
-                        disabled={!activeProjectId}
-                        className="p-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors disabled:opacity-50"
-                        title="Adicionar Coluna"
-                    >
+                    <button onClick={() => { setEditingColumnId(null); setNewColumnForm({ title: '', colorClass: 'text-indigo-400' }); setShowAddColumnModal(true); }} disabled={!activeProjectId} className="p-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg">
                         <Columns size={18} />
                     </button>
-                    {/* Edit Project Button */}
-                    <button
-                        type="button"
-                        onClick={openEditProjectModal}
-                        disabled={!activeProjectId}
-                        className="p-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors disabled:opacity-50"
-                        title="Configurações do Projeto"
-                    >
+                    <button onClick={openEditProjectModal} disabled={!activeProjectId} className="p-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg">
                         <Settings size={18} />
                     </button>
                 </div>
                 <div className="flex items-center space-x-2">
-                    {/* Project Chat Toggle */}
-                    <button
-                        type="button"
-                        onClick={() => setShowProjectChat(!showProjectChat)}
-                        disabled={!activeProjectId}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${showProjectChat ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}
-                        title="Chat do Projeto"
-                    >
+                    <button onClick={() => setShowProjectChat(!showProjectChat)} disabled={!activeProjectId} className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm ${showProjectChat ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-700'}`}>
                         <MessageSquare size={16} />
                         <span className="hidden md:inline">Chat</span>
                     </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setShowNewProjectModal(true)}
-                        className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-sm transition-colors shadow-lg shadow-indigo-900/50"
-                    >
+                    <button onClick={() => setShowNewProjectModal(true)} className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-sm shadow-lg shadow-indigo-900/50">
                         <FolderPlus size={16} />
                         <span className="hidden md:inline">Novo Projeto</span>
                     </button>
@@ -680,202 +396,53 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
                         <div className="flex-1 overflow-x-auto min-h-0 custom-scrollbar pb-4">
                             <div className="flex space-x-6 h-full min-w-max">
                                 {getEffectiveColumns(activeProject).map(col => (
-                                    <div
+                                    <KanbanColumn
                                         key={col.id}
-                                        className="w-80 flex-shrink-0 h-full flex flex-col"
-                                        draggable
-                                        onDragStart={(e) => handleColumnDragStart(e, col.id)}
-                                        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                                        onDrop={(e) => {
-                                            // Check if dropping a column or a task
-                                            if (draggedColumnId) {
-                                                handleColumnDrop(e, col.id);
-                                            } else {
-                                                handleDropOnColumn(e, col.id);
-                                            }
-                                        }}
-                                    >
-                                        {/* Column Header */}
-                                        <div className={`p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between ${col.colorClass} bg-slate-100 dark:bg-slate-800/80 rounded-t-xl cursor-grab active:cursor-grabbing transition-colors`}>
-                                            <div className='flex items-center space-x-2'>
-                                                <GripHorizontal size={14} className="opacity-50" />
-                                                <h3 className={`font-bold`}>{col.title}</h3>
-                                            </div>
-                                            <div className="flex items-center space-x-2">
-                                                <span className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2 py-1 rounded-full transition-colors">{activeProject.tasks.filter(t => t.status === col.id).length}</span>
-                                                <button onClick={(e) => { e.stopPropagation(); openEditColumnModal(col); }} className="text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                                                    <Edit2 size={14} />
-                                                </button>
-                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id) }} className="text-slate-500 dark:text-slate-500 hover:text-red-400 p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                                                    <X size={14} />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Column Body */}
-                                        <div className="flex-1 bg-slate-50 dark:bg-slate-800/50 border-x border-b border-slate-200 dark:border-slate-700/50 rounded-b-xl p-3 overflow-y-auto space-y-3 custom-scrollbar transition-colors">
-                                            {activeProject.tasks.filter(t => t.status === col.id).map(task => {
-                                                const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== DEFAULT_STATUSES.DONE;
-                                                return (
-                                                    <div
-                                                        key={task.id}
-                                                        onDrop={(e) => { e.stopPropagation(); handleDropOnCard(e, task.id, col.id); }}
-                                                        onDragOver={handleDragOver}
-                                                        onClick={() => openTaskModal(task)}
-                                                        className="bg-white dark:bg-slate-700 p-4 pt-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all group hover:shadow-lg relative cursor-default mb-3"
-                                                    >
-                                                        {/* Task Card Content (Same as before) -- Copied Logic */}
-                                                        <div
-                                                            draggable
-                                                            onDragStart={(e) => handleDragStart(e, task.id)}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="absolute left-0 right-0 top-0 h-6 cursor-grab active:cursor-grabbing rounded-t-lg z-10 flex items-center justify-center hover:bg-white/5 transition-colors group-hover:opacity-100 opacity-0"
-                                                            title="Arrastar Card"
-                                                        >
-                                                            <GripHorizontal size={14} className="text-slate-500" />
-                                                        </div>
-
-                                                        <div className="flex justify-between items-start mb-2 relative z-20">
-                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getPriorityColor(task.priority)}`}>
-                                                                {task.priority === 'URGENT' ? 'URGENTE' : task.priority === 'HIGH' ? 'ALTA' : task.priority === 'MEDIUM' ? 'MÉDIA' : 'BAIXA'}
-                                                            </span>
-                                                            <button
-                                                                type="button"
-                                                                onMouseDown={(e) => e.stopPropagation()}
-                                                                onClick={(e) => { e.stopPropagation(); openTaskModal(task); }}
-                                                                className="text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors bg-slate-100 dark:bg-slate-700/50"
-                                                                title="Editar"
-                                                            >
-                                                                <Edit2 size={14} />
-                                                            </button>
-                                                        </div>
-
-                                                        <p className="text-slate-900 dark:text-slate-200 font-medium text-sm mb-2 mt-1 transition-colors">{task.content}</p>
-
-                                                        <div className="flex flex-wrap gap-2 mb-2">
-                                                            {task.description && <div title="Possui descrição"><List size={14} className="text-slate-400" /></div>}
-                                                            {task.mediaUrl && (
-                                                                task.mediaUrl.match(/\.(mp4|webm)$/i)
-                                                                    ? <div title="Vídeo anexado"><Video size={14} className="text-pink-400" /></div>
-                                                                    : <div title="Imagem anexada"><ImageIcon size={14} className="text-pink-400" /></div>
-                                                            )}
-                                                        </div>
-
-                                                        {task.mediaUrl && (
-                                                            <div className="mb-3 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 max-h-32 transition-colors">
-                                                                {task.mediaUrl.match(/\.(mp4|webm)$/i) ? (
-                                                                    <video src={task.mediaUrl} className="w-full h-full object-cover opacity-80" muted />
-                                                                ) : (
-                                                                    <img src={task.mediaUrl} alt="attachment" className="w-full h-full object-cover opacity-80" />
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-600/50 relative z-20 transition-colors">
-                                                            <div className={`flex items-center text-xs ${isOverdue ? 'text-red-400 font-bold' : 'text-slate-600 dark:text-slate-400'} transition-colors`}>
-                                                                <Calendar size={12} className="mr-1" />
-                                                                {task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR') : 'Sem prazo'}
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                className="text-slate-500 dark:text-slate-500 hover:text-red-400 hover:bg-slate-200 dark:hover:bg-slate-600/50 p-1.5 rounded transition-colors cursor-pointer"
-                                                                onMouseDown={(e) => e.stopPropagation()}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation(); e.preventDefault(); handleDeleteTask(task.id);
-                                                                }}
-                                                                title="Excluir Tarefa"
-                                                            >
-                                                                <Trash2 size={15} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-
-                                            <button
-                                                type="button"
-                                                onClick={() => openTaskModal(undefined, col.id)}
-                                                className="w-full py-2 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-500 hover:text-indigo-400 hover:border-indigo-500/50 hover:bg-slate-100 dark:hover:bg-slate-700/30 transition-all flex items-center justify-center text-sm font-medium"
-                                            >
-                                                <Plus size={16} className="mr-2" /> Adicionar Card
-                                            </button>
-                                        </div>
-                                    </div>
+                                        column={col}
+                                        tasks={activeProject.tasks.filter(t => t.status === col.id)}
+                                        activeProjectId={activeProjectId}
+                                        onEditColumn={(c) => { setEditingColumnId(c.id); setNewColumnForm({ title: c.title, colorClass: c.colorClass }); setShowAddColumnModal(true); }}
+                                        onDeleteColumn={handleDeleteColumn}
+                                        onColumnDragStart={handleColumnDragStart}
+                                        onColumnDrop={handleColumnDrop}
+                                        onColumnDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                                        onTaskDragStart={handleTaskDragStart}
+                                        onTaskDragOver={handleTaskDragOver}
+                                        onTaskDropOnColumn={handleTaskDropOnColumn}
+                                        onTaskDropOnCard={handleTaskDropOnCard}
+                                        onEditTask={handleOpenTaskModal}
+                                        onDeleteTask={handleDeleteTask}
+                                    />
                                 ))}
-
-                                {/* New Column Button (at the end) */}
-                                <div className="w-80 flex-shrink-0 h-full flex flex-col items-center justify-start pt-4 opacity-50 hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={() => {
-                                            setEditingColumnId(null);
-                                            setNewColumnForm({ title: '', colorClass: 'text-indigo-400' });
-                                            setShowAddColumnModal(true);
-                                        }}
-                                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl hover:border-indigo-500 text-slate-500 dark:text-slate-500 hover:text-indigo-400 transition-colors"
-                                    >
-                                        <Columns size={24} className="mb-2" />
-                                        <span className="font-bold">Nova Coluna</span>
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 transition-colors">
-                        <FolderPlus size={48} className="mb-4 opacity-50" />
-                        <p>Crie um projeto para começar</p>
+                    <div className="h-full w-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                        <FolderPlus size={64} className="mb-4 opacity-50" />
+                        <p className="text-xl font-medium">Selecione ou crie um projeto para começar</p>
                     </div>
                 )}
-
-                {/* Slide-over Chat Panel */}
-                {/* CHANGED: Removed 'transform' and 'translate-x' classes. Used 'right' positioning transition instead. 
-            This ensures that 'fixed' positioning inside Chat component works relative to viewport, not this container. */}
-                <div
-                    className={`absolute top-0 bottom-0 w-full md:w-80 bg-slate-800 shadow-2xl border-l border-slate-700 transition-[right] duration-300 ease-in-out z-30 ${showProjectChat ? 'right-0' : '-right-full md:-right-80'}`}
-                >
-                    {activeProject && currentUser && showProjectChat && (
-                        <Chat
-                            currentUser={currentUser}
-                            companyId={companyId}
-                            projectId={activeProjectId}
-                            title={activeProject.name}
-                            isEmbedded={true}
-                            onClose={() => setShowProjectChat(false)}
-                        />
-                    )}
-                </div>
             </div>
 
-            {/* New Project Modal */}
+            <TaskModal
+                isOpen={showTaskModal}
+                onClose={() => setShowTaskModal(false)}
+                onSave={handleSaveTask}
+                initialTask={editingTask}
+                defaultStatus={newTaskStatus}
+            />
+
+            {/* KEEP EXISTING MODALS: PROJECT / COLUMN (Ideally extracting them too, but for now focusing on main board) */}
+            {/* Project Modals */}
             {showNewProjectModal && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-700 shadow-2xl animate-fade-in-up transition-colors">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 transition-colors">Novo Projeto</h3>
-                        <input
-                            type="text"
-                            value={newProjectName}
-                            onChange={(e) => setNewProjectName(e.target.value)}
-                            placeholder="Nome do projeto..."
-                            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white mb-6 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
-                            autoFocus
-                        />
-
-
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                type="button"
-                                onClick={() => setShowNewProjectModal(false)}
-                                className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleCreateProject}
-                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg"
-                            >
-                                Criar
-                            </button>
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-96 animate-fade-in">
+                        <h2 className="text-xl font-bold mb-4 dark:text-white">Novo Projeto</h2>
+                        <input type="text" placeholder="Nome do Projeto" className="w-full p-2 border rounded mb-4" value={newProjectName} onChange={e => setNewProjectName(e.target.value)} />
+                        <div className="flex justify-end space-x-2">
+                            <button onClick={() => setShowNewProjectModal(false)} className="px-4 py-2 text-slate-500">Cancelar</button>
+                            <button onClick={handleCreateProject} className="px-4 py-2 bg-indigo-600 text-white rounded">Criar</button>
                         </div>
                     </div>
                 </div>
@@ -883,225 +450,43 @@ const Kanban: React.FC<KanbanProps> = ({ currentUser, companyId, initialProjectI
 
             {/* Edit Project Modal */}
             {showEditProjectModal && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-700 shadow-2xl animate-fade-in-up transition-colors">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 transition-colors">Configurações do Projeto</h3>
-
-                        <div className="space-y-4 mb-6">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Nome do Projeto</label>
-                                <input
-                                    type="text"
-                                    value={editProjectForm.name}
-                                    onChange={(e) => setEditProjectForm({ ...editProjectForm, name: e.target.value })}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Descrição</label>
-                                <textarea
-                                    value={editProjectForm.description}
-                                    onChange={(e) => setEditProjectForm({ ...editProjectForm, description: e.target.value })}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                                    rows={3}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                            <button
-                                type="button"
-                                onClick={handleDeleteProject}
-                                className="flex items-center space-x-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 px-3 py-2 rounded-lg transition-colors border border-transparent hover:border-red-900/50"
-                            >
-                                <Trash2 size={16} />
-                                <span>Excluir Projeto</span>
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-96 animate-fade-in">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold dark:text-white">Configurações do Projeto</h2>
+                            <button onClick={(e) => handleDeleteProject(e)} className="text-red-500 hover:text-red-700 text-sm flex items-center">
+                                <AlertCircle size={14} className="mr-1" /> Excluir Projeto
                             </button>
-
-                            <div className="flex space-x-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowEditProjectModal(false)}
-                                    className="px-4 py-2 text-slate-300 hover:text-white"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleUpdateProject}
-                                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg flex items-center"
-                                >
-                                    <Save size={16} className="mr-2" />
-                                    Salvar
-                                </button>
-                            </div>
+                        </div>
+                        <input type="text" placeholder="Nome" className="w-full p-2 border rounded mb-4" value={editProjectForm.name} onChange={e => setEditProjectForm({ ...editProjectForm, name: e.target.value })} />
+                        <textarea placeholder="Descrição" className="w-full p-2 border rounded mb-4" value={editProjectForm.description} onChange={e => setEditProjectForm({ ...editProjectForm, description: e.target.value })} />
+                        <div className="flex justify-end space-x-2">
+                            <button onClick={() => setShowEditProjectModal(false)} className="px-4 py-2 text-slate-500">Cancelar</button>
+                            <button onClick={handleUpdateProject} className="px-4 py-2 bg-indigo-600 text-white rounded">Salvar</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Add Column Modal */}
+            {/* Column Modal */}
             {showAddColumnModal && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700 shadow-2xl animate-fade-in-up">
-                        <h3 className="text-xl font-bold text-white mb-4">{editingColumnId ? 'Editar Coluna' : 'Adicionar Coluna'}</h3>
-
-                        <div className="space-y-4 mb-6">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Título da Coluna</label>
-                                <input
-                                    type="text"
-                                    value={newColumnForm.title}
-                                    onChange={(e) => setNewColumnForm({ ...newColumnForm, title: e.target.value })}
-                                    placeholder="Ex: Em Revisão..."
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    autoFocus
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-96 animate-fade-in">
+                        <h2 className="text-xl font-bold mb-4 dark:text-white">{editingColumnId ? 'Editar Coluna' : 'Nova Coluna'}</h2>
+                        <input type="text" placeholder="Título da Coluna" className="w-full p-2 border rounded mb-4" value={newColumnForm.title} onChange={e => setNewColumnForm({ ...newColumnForm, title: e.target.value })} />
+                        <label className="block mb-2 text-sm text-slate-600 dark:text-slate-400">Cor do Título:</label>
+                        <div className="flex space-x-2 mb-6">
+                            {['text-pink-400', 'text-amber-400', 'text-emerald-400', 'text-blue-400', 'text-purple-400'].map(cls => (
+                                <button
+                                    key={cls}
+                                    onClick={() => setNewColumnForm({ ...newColumnForm, colorClass: cls })}
+                                    className={`w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 ${cls.replace('text', 'bg')} ${newColumnForm.colorClass === cls ? 'ring-2 ring-indigo-500' : ''}`}
                                 />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Cor</label>
-                                <div className="grid grid-cols-5 gap-2">
-                                    {['text-pink-400', 'text-amber-400', 'text-emerald-400', 'text-blue-400', 'text-purple-400'].map(color => (
-                                        <button
-                                            key={color}
-                                            type="button"
-                                            onClick={() => setNewColumnForm({ ...newColumnForm, colorClass: color })}
-                                            className={`w-8 h-8 rounded-full border-2 ${newColumnForm.colorClass === color ? 'border-indigo-500' : 'border-transparent'} flex items-center justify-center`}
-                                        >
-                                            <div className={`w-4 h-4 rounded-full ${color.replace('text-', 'bg-')}`}></div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                            ))}
                         </div>
-
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                type="button"
-                                onClick={() => setShowAddColumnModal(false)}
-                                className="px-4 py-2 text-slate-300 hover:text-white"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleSaveColumn}
-                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg"
-                            >
-                                {editingColumnId ? 'Salvar' : 'Criar'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Task Modal (Create/Edit) */}
-            {showTaskModal && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-slate-800 rounded-2xl w-full max-w-lg border border-slate-700 shadow-2xl flex flex-col max-h-[90vh] animate-fade-in-up">
-                        <div className="p-6 border-b border-slate-700 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-white">
-                                {editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}
-                            </h3>
-                            <button type="button" onClick={() => setShowTaskModal(false)} className="text-slate-400 hover:text-white">
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar">
-                            {/* Title */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Título</label>
-                                <input
-                                    type="text"
-                                    value={taskForm.content}
-                                    onChange={(e) => setTaskForm({ ...taskForm, content: e.target.value })}
-                                    placeholder="O que precisa ser feito?"
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    autoFocus
-                                />
-                            </div>
-
-                            {/* Description */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Descrição</label>
-                                <textarea
-                                    value={taskForm.description}
-                                    onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
-                                    placeholder="Detalhes adicionais..."
-                                    rows={3}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                {/* Priority */}
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Urgência</label>
-                                    <select
-                                        value={taskForm.priority}
-                                        onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as TaskPriority })}
-                                        className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    >
-                                        <option value="LOW">Baixa</option>
-                                        <option value="MEDIUM">Média</option>
-                                        <option value="HIGH">Alta</option>
-                                        <option value="URGENT">Urgente</option>
-                                    </select>
-                                </div>
-
-                                {/* Due Date */}
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Prazo de Entrega</label>
-                                    <input
-                                        type="date"
-                                        value={taskForm.dueDate}
-                                        onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none dark:[color-scheme:dark]"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Media URL */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Link de Imagem ou Vídeo (URL)</label>
-                                <div className="flex items-center bg-slate-900 border border-slate-600 rounded-lg px-3 focus-within:ring-2 focus-within:ring-indigo-500">
-                                    <Paperclip size={18} className="text-slate-500 mr-2" />
-                                    <input
-                                        type="text"
-                                        value={taskForm.mediaUrl}
-                                        onChange={(e) => setTaskForm({ ...taskForm, mediaUrl: e.target.value })}
-                                        placeholder="https://exemplo.com/imagem.jpg"
-                                        className="w-full bg-transparent py-3 text-white outline-none"
-                                    />
-                                </div>
-                                {taskForm.mediaUrl && (
-                                    <div className="mt-2 h-32 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden">
-                                        {taskForm.mediaUrl.match(/\.(mp4|webm)$/i) ? (
-                                            <video src={taskForm.mediaUrl} className="h-full w-full object-contain" controls />
-                                        ) : (
-                                            <img src={taskForm.mediaUrl} alt="Preview" className="h-full w-full object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="p-6 border-t border-slate-700 flex justify-end space-x-3 bg-slate-800/50">
-                            <button
-                                type="button"
-                                onClick={() => setShowTaskModal(false)}
-                                className="px-4 py-2 text-slate-300 hover:text-white"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleSaveTask}
-                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium shadow-lg shadow-indigo-900/50"
-                            >
-                                {editingTask ? 'Salvar Alterações' : 'Criar Tarefa'}
-                            </button>
+                        <div className="flex justify-end space-x-2">
+                            <button onClick={() => setShowAddColumnModal(false)} className="px-4 py-2 text-slate-500">Cancelar</button>
+                            <button onClick={handleSaveColumn} className="px-4 py-2 bg-indigo-600 text-white rounded">Salvar</button>
                         </div>
                     </div>
                 </div>

@@ -97,8 +97,9 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 text-xs uppercase font-bold sticky top-0 z-10 transition-colors">
                             <tr>
-                                <th className="p-4">Nome / Cargo</th>
-                                <th className="p-4">Empresa</th>
+                                <th className="p-4">Lead / Instagram</th>
+                                <th className="p-4">Empresa / Interesses</th>
+                                <th className="p-4">Desafios (Notas)</th>
                                 <th className="p-4">Contato</th>
                                 <th className="p-4 text-right">Ações</th>
                             </tr>
@@ -108,15 +109,41 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                                 <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors group">
                                     <td className="p-4">
                                         <div className="font-bold text-slate-900 dark:text-white">{client.name}</div>
-                                        {client.role && <div className="text-xs text-slate-500">{client.role}</div>}
+                                        {client.role && (
+                                            <div className="flex items-center text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium">
+                                                {client.role.startsWith('@') ? (
+                                                    <><div className="w-4 h-4 mr-1 flex items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50">📸</div> {client.role}</>
+                                                ) : client.role}
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="p-4">
-                                        {client.organizationName ? (
-                                            <div className="flex items-center text-slate-600 dark:text-slate-300">
-                                                <Building size={14} className="mr-2 text-slate-400 dark:text-slate-500" />
-                                                {client.organizationName}
+                                        <div className="space-y-2">
+                                            {client.organizationName ? (
+                                                <div className="flex items-center text-slate-700 dark:text-slate-200 font-medium">
+                                                    <Building size={14} className="mr-2 text-slate-400 dark:text-slate-500" />
+                                                    {client.organizationName}
+                                                </div>
+                                            ) : <span className="text-slate-400 dark:text-slate-600 text-sm">-</span>}
+
+                                            {/* Interests / Tags */}
+                                            {client.tags && client.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {client.tags.map((tag, i) => (
+                                                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        {client.notes ? (
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 italic max-w-[200px] line-clamp-2" title={client.notes}>
+                                                "{client.notes}"
                                             </div>
-                                        ) : <span className="text-slate-400 dark:text-slate-600">-</span>}
+                                        ) : <span className="text-slate-300 dark:text-slate-700 text-xs">-</span>}
                                     </td>
                                     <td className="p-4">
                                         <div className="flex flex-col space-y-1">
@@ -166,7 +193,7 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                             ))}
                             {filteredClients.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="p-8 text-center text-slate-500">
+                                    <td colSpan={5} className="p-8 text-center text-slate-500">
                                         Nenhum cliente encontrado.
                                     </td>
                                 </tr>

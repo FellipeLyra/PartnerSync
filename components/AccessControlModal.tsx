@@ -16,6 +16,7 @@ const AVAILABLE_VIEWS: { id: ViewState; label: string }[] = [
     { id: 'CHAT', label: 'Chat da Equipe' },
     { id: 'FINANCE', label: 'Financeiro' },
     { id: 'TEAM', label: 'Gestão de Equipe' },
+    { id: 'CRM', label: 'CRM & Vendas' },
 ];
 
 export default function AccessControlModal({ isOpen, onClose, user, companyId }: AccessControlModalProps) {

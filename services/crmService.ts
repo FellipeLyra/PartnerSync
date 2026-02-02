@@ -11,21 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { Client, Deal, Interaction, ClientMessage } from '../types';
-
-// Reuse helper from storageService (in a real scenario, we'd export it, but for now duplicate for safety/speed)
-const mapDoc = (doc: any) => ({ id: doc.id, ...doc.data() });
-
-const deepSanitize = (obj: any): any => {
-    if (obj === null || obj === undefined) return null;
-    if (Array.isArray(obj)) return obj.map(item => deepSanitize(item)).filter(item => item !== undefined);
-    if (typeof obj === 'object') {
-        return Object.entries(obj).reduce((acc, [key, value]) => {
-            if (value !== undefined) acc[key] = deepSanitize(value);
-            return acc;
-        }, {} as any);
-    }
-    return obj;
-};
+import { deepSanitize, mapDoc } from './core/firebaseUtils';
 
 export const crmService = {
     // --- CLIENTS ---
@@ -52,29 +38,35 @@ export const crmService = {
         }
     },
 
+    getClientByName: async (companyId: string, name: string): Promise<Client | null> => {
+        if (!db) return null;
+        const q = query(collection(db, 'clients'), where('companyId', '==', companyId));
+        const snap = await getDocs(q);
+        const clients = snap.docs.map(mapDoc) as Client[];
+
+        const match = clients.find(c => c.name.toLowerCase().includes(name.toLowerCase()) ||
+            (c.organizationName && c.organizationName.toLowerCase().includes(name.toLowerCase())));
+        return match || null;
+    },
+
     deleteClient: async (clientId: string) => {
         if (!db) return;
 
         try {
-            // Cascade Delete: Messages
+            // Cascade Delete
             const messagesQ = query(collection(db, 'client_messages'), where('clientId', '==', clientId));
             const messagesSnap = await getDocs(messagesQ);
             const msgDeletes = messagesSnap.docs.map(d => deleteDoc(doc(db, 'client_messages', d.id)));
 
-            // Cascade Delete: Interactions
             const interactionsQ = query(collection(db, 'interactions'), where('clientId', '==', clientId));
             const interactionsSnap = await getDocs(interactionsQ);
             const interactionDeletes = interactionsSnap.docs.map(d => deleteDoc(doc(db, 'interactions', d.id)));
 
-            // Cascade Delete: Deals
             const dealsQ = query(collection(db, 'deals'), where('clientId', '==', clientId));
             const dealsSnap = await getDocs(dealsQ);
             const dealDeletes = dealsSnap.docs.map(d => deleteDoc(doc(db, 'deals', d.id)));
 
-            // Execute all deletions related to client
             await Promise.all([...msgDeletes, ...interactionDeletes, ...dealDeletes]);
-
-            // Finally delete the client
             await deleteDoc(doc(db, 'clients', clientId));
         } catch (error) {
             console.error("Error deleting client and related data:", error);
@@ -107,6 +99,39 @@ export const crmService = {
         }
     },
 
+    addDeal: async (companyId: string, deal: Partial<Deal>) => {
+        if (!db) return;
+
+        let stageId = 'PROSPECT';
+        if (deal.stageId) {
+            const lower = deal.stageId.toLowerCase();
+            if (lower.includes('quali')) stageId = 'QUALIFICATION';
+            else if (lower.includes('prop')) stageId = 'PROPOSAL';
+            else if (lower.includes('negoc')) stageId = 'NEGOTIATION';
+            else if (lower.includes('ganho') || lower.includes('fech')) stageId = 'WON';
+            else if (lower.includes('perd')) stageId = 'LOST';
+            else stageId = 'PROSPECT';
+        }
+
+        const newDeal: Deal = {
+            id: '',
+            companyId,
+            clientId: deal.clientId!,
+            title: deal.title || 'Nova Oportunidade',
+            value: deal.value || 0,
+            stageId: stageId,
+            probability: deal.probability || 50,
+            status: 'OPEN',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            ...deal
+        } as Deal;
+
+        const { id, ...data } = newDeal;
+        await addDoc(collection(db, 'deals'), deepSanitize(data));
+        return newDeal.title;
+    },
+
     deleteDeal: async (dealId: string) => {
         if (!db) return;
         await deleteDoc(doc(db, 'deals', dealId));
@@ -122,7 +147,7 @@ export const crmService = {
         );
         return onSnapshot(q, (snapshot) => {
             const interactions = snapshot.docs.map(mapDoc) as Interaction[];
-            interactions.sort((a, b) => b.date - a.date); // Newest first
+            interactions.sort((a, b) => b.date - a.date);
             callback(interactions);
         }, (error) => console.warn("Firestore Error (Interactions):", error));
     },
@@ -143,7 +168,7 @@ export const crmService = {
         );
         return onSnapshot(q, (snapshot) => {
             const messages = snapshot.docs.map(mapDoc) as ClientMessage[];
-            messages.sort((a, b) => a.timestamp - b.timestamp); // Chronological order
+            messages.sort((a, b) => a.timestamp - b.timestamp);
             callback(messages);
         }, (error) => console.warn("Firestore Error (Messages):", error));
     },

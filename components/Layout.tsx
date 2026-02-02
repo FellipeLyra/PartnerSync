@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, KanbanSquare, MessageSquare, LogOut, Check, X, Camera, UserPlus, Copy, User as UserIcon, ShieldAlert, DollarSign, Users, Target, Settings } from 'lucide-react';
-import { User, ViewState, Company } from '../types';
+import type { User, ViewState, Company } from '../types';
 import { storageService } from '../services/storageService';
 import { ThemeToggle } from './ThemeToggle';
 import ProfileSettingsModal from './ProfileSettingsModal';
