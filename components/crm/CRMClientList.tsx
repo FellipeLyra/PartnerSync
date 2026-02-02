@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { User, Client, ViewState } from '../../types';
 import { crmService } from '../../services/crmService';
-import { Search, Plus, Phone, Mail, Building, MoreVertical, Linkedin, ExternalLink, Trash2, MessageCircle } from 'lucide-react';
+import { Search, Plus, Phone, Mail, Building, MoreVertical, Linkedin, ExternalLink, Trash2, MessageCircle, Upload, Instagram, Globe } from 'lucide-react';
 import ClientChat from './ClientChat';
+import CsvImporter from './CsvImporter';
 
 interface ClientListProps {
     currentUser: User;
@@ -14,6 +15,7 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
     const [filteredClients, setFilteredClients] = useState<Client[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const [selectedClientForChat, setSelectedClientForChat] = useState<Client | null>(null);
 
 
@@ -82,25 +84,35 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                         className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-slate-900 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
                     />
                 </div>
-                <button
-                    onClick={() => { setFormData({}); setShowModal(true); }}
-                    className="bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-500 text-white px-4 py-2.5 rounded-lg flex items-center shadow-lg transition-colors"
-                >
-                    <Plus size={18} className="mr-2" />
-                    Novo Cliente
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setShowImportModal(true)}
+                        className="bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-200 px-4 py-2.5 rounded-lg flex items-center border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors shadow-sm"
+                    >
+                        <Upload size={18} className="mr-2" />
+                        Importar CSV
+                    </button>
+                    <button
+                        onClick={() => { setFormData({}); setShowModal(true); }}
+                        className="bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-500 text-white px-4 py-2.5 rounded-lg flex items-center shadow-lg transition-colors"
+                    >
+                        <Plus size={18} className="mr-2" />
+                        Novo Cliente
+                    </button>
+                </div>
             </div>
 
             {/* LIST */}
             <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col shadow-sm dark:shadow-none transition-colors">
                 <div className="overflow-y-auto custom-scrollbar flex-1">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-gray-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 text-xs uppercase font-bold sticky top-0 z-10 transition-colors">
+                        <thead className="bg-gray-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs uppercase font-bold sticky top-0 z-10 transition-colors shadow-sm">
                             <tr>
-                                <th className="p-4">Lead / Instagram</th>
-                                <th className="p-4">Empresa / Interesses</th>
-                                <th className="p-4">Desafios (Notas)</th>
+                                <th className="p-4">Cliente</th>
+                                <th className="p-4">Empresa</th>
                                 <th className="p-4">Contato</th>
+                                <th className="p-4">Redes Sociais</th>
+                                <th className="p-4">Notas</th>
                                 <th className="p-4 text-right">Ações</th>
                             </tr>
                         </thead>
@@ -109,13 +121,6 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                                 <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors group">
                                     <td className="p-4">
                                         <div className="font-bold text-slate-900 dark:text-white">{client.name}</div>
-                                        {client.role && (
-                                            <div className="flex items-center text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium">
-                                                {client.role.startsWith('@') ? (
-                                                    <><div className="w-4 h-4 mr-1 flex items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50">📸</div> {client.role}</>
-                                                ) : client.role}
-                                            </div>
-                                        )}
                                     </td>
                                     <td className="p-4">
                                         <div className="space-y-2">
@@ -126,7 +131,6 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                                                 </div>
                                             ) : <span className="text-slate-400 dark:text-slate-600 text-sm">-</span>}
 
-                                            {/* Interests / Tags */}
                                             {client.tags && client.tags.length > 0 && (
                                                 <div className="flex flex-wrap gap-1">
                                                     {client.tags.map((tag, i) => (
@@ -137,13 +141,6 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                                                 </div>
                                             )}
                                         </div>
-                                    </td>
-                                    <td className="p-4">
-                                        {client.notes ? (
-                                            <div className="text-xs text-slate-500 dark:text-slate-400 italic max-w-[200px] line-clamp-2" title={client.notes}>
-                                                "{client.notes}"
-                                            </div>
-                                        ) : <span className="text-slate-300 dark:text-slate-700 text-xs">-</span>}
                                     </td>
                                     <td className="p-4">
                                         <div className="flex flex-col space-y-1">
@@ -157,7 +154,57 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                                                     <Phone size={12} className="mr-2" /> {client.phone}
                                                 </div>
                                             )}
+                                            {!client.email && !client.phone && <span className="text-slate-400 dark:text-slate-600 text-xs">-</span>}
                                         </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2">
+                                            {/* Role / Instagram */}
+                                            {client.role && (
+                                                <>
+                                                    {(client.role.startsWith('@') || client.role.includes('instagram')) ? (
+                                                        <a
+                                                            href={client.role.startsWith('http') ? client.role : `https://instagram.com/${client.role.replace('@', '')}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="p-2 rounded-lg bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors"
+                                                            title={client.role}
+                                                        >
+                                                            <Instagram size={18} />
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded dark:bg-slate-800 dark:text-slate-400">{client.role}</span>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {/* Website / LinkedIn */}
+                                            {client.linkedinProfile && (
+                                                <a
+                                                    href={client.linkedinProfile}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className={`p-2 rounded-lg transition-colors ${client.linkedinProfile.includes('linkedin')
+                                                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                                                            : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                                                        }`}
+                                                    title={client.linkedinProfile.includes('linkedin') ? 'LinkedIn' : 'Website'}
+                                                >
+                                                    {client.linkedinProfile.includes('linkedin') ? <Linkedin size={18} /> : <Globe size={18} />}
+                                                </a>
+                                            )}
+
+                                            {(!client.role || (!client.role.includes('instagram') && !client.role.startsWith('@') && !client.role)) && !client.linkedinProfile && (
+                                                <span className="text-slate-300 dark:text-slate-700 text-xs">-</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        {client.notes ? (
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 italic max-w-[200px] line-clamp-2" title={client.notes}>
+                                                "{client.notes}"
+                                            </div>
+                                        ) : <span className="text-slate-300 dark:text-slate-700 text-xs">-</span>}
                                     </td>
                                     <td className="p-4 text-right">
                                         <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -252,6 +299,14 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                     currentUser={currentUser}
                     companyId={companyId}
                     onClose={() => setSelectedClientForChat(null)}
+                />
+            )}
+            {/* CSV IMPORT MODAL */}
+            {showImportModal && (
+                <CsvImporter
+                    companyId={companyId}
+                    onClose={() => setShowImportModal(false)}
+                    onSuccess={() => setShowImportModal(false)}
                 />
             )}
         </div>

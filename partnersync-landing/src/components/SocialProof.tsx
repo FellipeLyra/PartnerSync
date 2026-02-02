@@ -52,7 +52,7 @@ const SocialProof: React.FC = () => {
                     {testimonials.map((testimonial, index) => (
                         <div
                             key={index}
-                            className="p-8 md:p-12 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl glass animate-fadeInUp"
+                            className="p-8 md:p-12 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl bg-bg-tertiary border border-border/50 animate-fadeInUp"
                             style={{ animationDelay: `${index * 0.15}s` }}
                         >
                             <div className="text-primary opacity-30 mb-6">

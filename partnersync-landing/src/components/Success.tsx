@@ -8,7 +8,7 @@ const Success: React.FC<SuccessProps> = ({ onBackToHome }) => {
     return (
         <div className="min-h-screen flex items-center justify-center py-16 bg-bg-secondary">
             <div className="container mx-auto px-6">
-                <div className="max-w-[600px] mx-auto p-12 rounded-2xl text-center shadow-xl glass animate-fadeInUp">
+                <div className="max-w-[600px] mx-auto p-12 rounded-2xl text-center shadow-xl bg-bg-tertiary border border-border/50 animate-fadeInUp">
                     <div className="w-[120px] h-[120px] mx-auto mb-8 rounded-full bg-gradient-to-r from-primary to-accent text-white flex items-center justify-center animate-[scaleIn_0.5s_ease-out]">
                         <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
                             <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

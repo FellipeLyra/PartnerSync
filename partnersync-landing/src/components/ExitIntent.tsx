@@ -72,14 +72,14 @@ const ExitIntent: React.FC<ExitIntentProps> = ({ onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 animate-[fadeIn_0.3s_ease-out]" onClick={handleClose}>
-            <div className="bg-white rounded-2xl max-w-[540px] w-full relative animate-[slideUp_0.4s_cubic-bezier(0.4,0,0.2,1)] shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                <button className="absolute top-4 right-4 bg-black/5 border-none w-8 h-8 rounded-full text-xl cursor-pointer flex items-center justify-center transition-all duration-300 text-text-secondary hover:bg-black/10 hover:rotate-90 z-10" onClick={handleClose} aria-label="Fechar">
+            <div className="bg-bg-tertiary border border-border/50 rounded-2xl max-w-[540px] w-full relative animate-[slideUp_0.4s_cubic-bezier(0.4,0,0.2,1)] shadow-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <button className="absolute top-4 right-4 bg-white/5 border-none w-8 h-8 rounded-full text-xl cursor-pointer flex items-center justify-center transition-all duration-300 text-text-secondary hover:bg-white/10 hover:rotate-90 z-10" onClick={handleClose} aria-label="Fechar">
                     ✕
                 </button>
 
                 {success ? (
                     <div className="p-12 text-center animate-fadeIn">
-                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
+                        <div className="w-16 h-16 bg-success/20 text-success rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
                             🎉
                         </div>
                         <h2 className="text-2xl font-bold text-text-primary mb-2">Sucesso!</h2>
@@ -95,15 +95,15 @@ const ExitIntent: React.FC<ExitIntentProps> = ({ onClose }) => {
 
                         <div className="flex flex-col gap-3 mb-8 text-left max-w-sm mx-auto">
                             <div className="flex items-center gap-3 text-sm text-text-secondary">
-                                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0 text-xs">✓</div>
+                                <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center text-success flex-shrink-0 text-xs">✓</div>
                                 <span>Auditoria completa do seu Instagram</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm text-text-secondary">
-                                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0 text-xs">✓</div>
+                                <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center text-success flex-shrink-0 text-xs">✓</div>
                                 <span>Identificação de oportunidades</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm text-text-secondary">
-                                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0 text-xs">✓</div>
+                                <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center text-success flex-shrink-0 text-xs">✓</div>
                                 <span>Proposta em 24 horas</span>
                             </div>
                         </div>
@@ -114,7 +114,7 @@ const ExitIntent: React.FC<ExitIntentProps> = ({ onClose }) => {
                                 name="email"
                                 placeholder="Seu melhor e-mail"
                                 required
-                                className="p-4 border border-border bg-bg-secondary/30 rounded-xl text-base outline-none transition-all duration-300 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                className="p-4 border border-border bg-bg-secondary rounded-xl text-base outline-none transition-all duration-300 focus:bg-bg-tertiary focus:border-primary focus:ring-4 focus:ring-primary/10"
                             />
                             <button
                                 type="submit"

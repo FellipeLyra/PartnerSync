@@ -126,6 +126,7 @@ export interface Client {
   linkedinProfile?: string;
   revenueHistory?: number; // Total revenue generated from this client
   leadSource?: string; // e.g., "Website", "Referral"
+  website?: string;
   tags?: string[];
   notes?: string;
   address?: string;
@@ -192,4 +193,51 @@ export interface AppNotification {
   createdAt: number;
   read: boolean;
   targetId?: string; // ID of the specific item (e.g. messageId) to navigate to
+}
+
+// LEAD FINDER TYPES
+
+export interface SavedSearch {
+  id: string;
+  companyId: string;
+  name: string;
+  filters: {
+    niche: string; // "gym", "lawyer", etc.
+    osmTags: string[]; // "amenity=gym", "leisure=fitness_centre"
+    locationType: 'CITY' | 'RADIUS';
+    city?: string; // "São Paulo, SP"
+    coordinates?: { lat: number; lng: number; radiusKm: number };
+    mustHaveWebsite: boolean;
+    mustHavePhone: boolean;
+  };
+  schedule?: 'MANUAL' | 'DAILY' | 'WEEKLY';
+  lastRun?: number;
+  createdAt: number;
+}
+
+export interface SearchRun {
+  id: string;
+  searchId: string;
+  companyId: string;
+  date: number;
+  totalFound: number;
+  newLeads: number;
+  duplicates: number;
+  status: 'COMPLETED' | 'FAILED';
+}
+
+export interface LeadCandidate {
+  id: string; // osm_id usually
+  name: string;
+  address?: string;
+  city?: string;
+  phone?: string;
+  website?: string;
+  instagram?: string;
+  osmTags?: Record<string, string>;
+  lat: number;
+  lon: number;
+  status: 'NEW' | 'DUPLICATE' | 'IMPORTED' | 'IGNORED';
+  duplicateReason?: string; // "Phone match", "Website match"
+  matchedClientId?: string; // If duplicate/imported, which client ID it matches
 }

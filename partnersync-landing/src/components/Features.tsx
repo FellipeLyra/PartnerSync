@@ -79,7 +79,7 @@ const Features: React.FC = () => {
                     {features.map((feature, index) => (
                         <div
                             key={index}
-                            className="group p-8 rounded-3xl bg-white border border-border/50 shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-2 transition-all duration-300 animate-fadeInUp"
+                            className="group p-8 rounded-3xl bg-bg-tertiary border border-border/50 shadow-lg hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-2 transition-all duration-300 animate-fadeInUp"
                             style={{ animationDelay: `${index * 0.1}s` }}
                         >
                             <div className="w-14 h-14 rounded-2xl bg-gradient-primary flex items-center justify-center mb-6 shadow-lg shadow-primary/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">

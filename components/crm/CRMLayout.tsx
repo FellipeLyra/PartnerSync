@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { User, Company } from '../../types';
-import { LayoutDashboard, Users, KanbanSquare, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, KanbanSquare, Settings, Search } from 'lucide-react';
 import CRMDashboard from './CRMDashboard';
 import CRMClientList from './CRMClientList';
 import PipelineBoard from '@/components/crm/PipelineBoard';
+import LeadFinder from './LeadFinder';
 
 interface CRMLayoutProps {
     currentUser: User;
@@ -11,7 +12,7 @@ interface CRMLayoutProps {
     onUpdateUser?: (user: User) => void;
 }
 
-type CRMView = 'DASHBOARD' | 'PIPELINE' | 'CLIENTS';
+type CRMView = 'DASHBOARD' | 'PIPELINE' | 'CLIENTS' | 'LEAD_FINDER';
 
 const CRMLayout: React.FC<CRMLayoutProps> = ({ currentUser, companyId, onUpdateUser }) => {
     const [view, setView] = useState<CRMView>('DASHBOARD');
@@ -44,6 +45,13 @@ const CRMLayout: React.FC<CRMLayoutProps> = ({ currentUser, companyId, onUpdateU
                         <Users size={16} />
                         <span>Clientes & Leads</span>
                     </button>
+                    <button
+                        onClick={() => setView('LEAD_FINDER')}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${view === 'LEAD_FINDER' ? 'bg-indigo-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                    >
+                        <Search size={16} />
+                        <span>Lead Finder</span>
+                    </button>
                 </nav>
             </header>
 
@@ -52,6 +60,7 @@ const CRMLayout: React.FC<CRMLayoutProps> = ({ currentUser, companyId, onUpdateU
                 {view === 'DASHBOARD' && <CRMDashboard companyId={companyId} />}
                 {view === 'PIPELINE' && <PipelineBoard currentUser={currentUser} companyId={companyId} />}
                 {view === 'CLIENTS' && <CRMClientList currentUser={currentUser} companyId={companyId} />}
+                {view === 'LEAD_FINDER' && <LeadFinder companyId={companyId} />}
             </div>
         </div>
     );
