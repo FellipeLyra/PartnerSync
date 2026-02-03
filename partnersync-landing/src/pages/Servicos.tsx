@@ -49,7 +49,7 @@ const Servicos: React.FC = () => {
         {
             title: 'Gestão de Tráfego',
             icon: '📈',
-            description: 'Compramos dinheiro com desconto. Campanhas matematicamente otimizadas para colocar seu produto na frente de quem já quer comprar.',
+            description: 'Campanhas matematicamente otimizadas para colocar seu produto na frente de quem já quer comprar.',
             features: ['Facebook & Instagram Ads', 'Google & YouTube Ads', 'Remarketing Inteligente'],
             results: 'ROI Médio: 4.8x'
         },
@@ -58,21 +58,21 @@ const Servicos: React.FC = () => {
             icon: '🎨',
             description: 'Transformamos seguidores em fãs e fãs em clientes. Conteúdo intencional que constrói autoridade e desejo de compra.',
             features: ['Design Premium', 'Edição de Vídeos Virais (Reels)', 'Gestão de Comunidade', 'Calendário Editorial'],
-            results: 'Engajamento: +250%'
+            results: 'Engajamento médio: +150%'
         },
         {
             title: 'Sites & Landing Pages',
             icon: '💻',
             description: 'Páginas que não apenas informam, mas convertem. Design persuasivo otimizado para transformar visitantes em leads qualificados.',
             features: ['Design de Alta Conversão', 'Copywriting Persuasivo', 'Velocidade Extrema', 'Otimização Mobile'],
-            results: 'Conversão: +180%'
+            results: 'Conversão média: +70%'
         },
         {
             title: 'Sistema PartnerSync',
             icon: '⚡',
             description: 'A inteligência central do seu negócio. CRM, Financeiro, Projetos e IA integrados para eliminar o caos e escalar sua operação.',
             features: ['CRM & Funil de Vendas', 'Gestão Financeira Completa', 'Gestão de Tarefas & Projetos', 'Automação com IA'],
-            results: 'Produtividade: +300%'
+            results: 'Produtividade média: +200%'
         }
     ];
 

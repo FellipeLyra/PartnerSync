@@ -14,6 +14,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ConfirmProvider } from './contexts/ConfirmContext';
 import ToastContainer from './components/ui/ToastContainer';
+import EmailVerification from './components/EmailVerification';
 
 // --- SUB-COMPONENTS FOR CLEANER APP.TSX ---
 
@@ -99,7 +100,7 @@ service cloud.firestore {
       allow update: if belongsToCompany(companyId) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
     }
     
-    // Multi-tenant Collections
+    // Multi-tenant Collection
     match /{collection}/{docId} {
       allow create: if belongsToCompany(request.resource.data.companyId);
       allow read, update, delete: if belongsToCompany(resource.data.companyId);
@@ -148,7 +149,7 @@ const UpdateRequiredView: React.FC<{ onLogout: () => void }> = ({ onLogout }) =>
 );
 
 const AppContent: React.FC = () => {
-  const { currentUser, loading, error, login, logout, updateUser } = useAuth();
+  const { currentUser, loading, error, login, logout, updateUser, isEmailVerified } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>('TIME_CLOCK');
   const [navParams, setNavParams] = useState<any>(null);
 
@@ -181,6 +182,11 @@ const AppContent: React.FC = () => {
 
   if (!currentUser) {
     return <Auth onLogin={handleLogin} />;
+  }
+
+  // Enforce Email Verification
+  if (!isEmailVerified) {
+    return <EmailVerification />;
   }
 
   if (currentUser && !currentUser.companyId) {

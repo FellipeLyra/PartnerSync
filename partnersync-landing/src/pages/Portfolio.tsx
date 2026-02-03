@@ -5,7 +5,7 @@ const Portfolio: React.FC = () => {
         {
             title: 'Estética Automotiva',
             category: 'ARTES + Tráfego',
-            results: '+45 agendamentos/mês',
+            results: 'Em média 45 agendamentos/mês',
             images: [
                 '/estética-automotiva/Feed-natal.png',
                 '/estética-automotiva/Película-feed-nexfil.png',
@@ -13,54 +13,173 @@ const Portfolio: React.FC = () => {
             ]
         },
         {
-            title: 'Academia Fitness',
-            category: 'Gestão de Redes + Vídeo',
-            results: '+250% de seguidores',
-            images: ['💪']
+            title: 'Sistema para escritórios de advocacia',
+            category: 'UX/UI + Desenvolvimento',
+            results: 'Interface intuitiva e funcional',
+            images: [
+                '/Peticiona/Home.png',
+                '/Peticiona/Gestão financeira.png',
+                '/Peticiona/Chat.png'
+            ]
         },
         {
-            title: 'Clínica de Estética',
-            category: 'Tráfego Pago + Arte',
-            results: 'ROI de 5.2x',
-            images: ['💆']
+            title: 'Academia Lago Sul Fit',
+            category: 'Artes + Tráfego',
+            results: 'Em média 300k de impressões',
+            images: [
+                '/academia/muaythai.jpg',
+                '/academia/7.jpeg',
+                '/academia/notificação.jpg'
+            ]
         },
         {
-            title: 'Restaurante Gourmet',
+            title: 'Criativos chamativos',
             category: 'Instagram + Copywriting',
-            results: '+180% em reservas',
-            images: ['🍽️']
+            results: 'Em média+180% de seguidores',
+            images: [
+                '/ia/Monster.png',
+                '/ia/AirJordan.png',
+                '/ia/Artboard 2.png'
+            ]
         },
         {
-            title: 'Loja de Cosméticos',
-            category: 'Pacote Completo',
-            results: '+400% de faturamento',
-            images: ['💄']
+            title: 'Campanhas de tráfego pago',
+            category: 'Tráfego Pago',
+            results: 'Em média 4.2x de ROI',
+            images: [
+                '/grafico/grafico1.jpeg',
+                '/grafico/grafico2.jpeg',
+                '/grafico/grafico3.jpeg'
+            ]
         },
         {
-            title: 'Consultoria Empresarial',
-            category: 'LinkedIn + Tráfego',
-            results: '+90 leads qualificados/mês',
-            images: ['💼']
+            title: 'Thumbnails para YouTube',
+            category: 'Thumbnail',
+            results: 'Em média 200k de impressões',
+            images: [
+                '/thumb/thumb-fortinite.png',
+                '/thumb/thumb-teste.png',
+                '/thumb/thumb243.png'
+            ]
         }
     ];
 
     const videoItems = [
         {
-            title: 'Comercial de TV - TechStart',
+            title: 'Reels Promocional',
             category: 'Produção Publicitária',
-            videoUrl: 'https://media.w3.org/2010/05/sintel/trailer_hd.mp4', // Exemplo
+            videoUrl: '/video/Eternize.mp4',
             subtitle: 'Direção de Arte + Edição'
         },
         {
-            title: 'Reels Viral - Moda',
+            title: 'Reels Viral',
             category: 'Conteúdo Vertical',
-            videoUrl: '', // Sem vídeo (placeholder)
+            videoUrl: '/video/anuncio.mp4',
             subtitle: 'Roteiro + Captação + Edição'
         }
     ];
 
+    const [selectedProject, setSelectedProject] = React.useState<typeof portfolioItems[0] | null>(null);
+    const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
+
+    const openProject = (item: typeof portfolioItems[0]) => {
+        setSelectedProject(item);
+        setCurrentImageIndex(0);
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeProject = () => {
+        setSelectedProject(null);
+        document.body.style.overflow = 'unset';
+    };
+
+    const nextImage = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!selectedProject) return;
+        setCurrentImageIndex((prev) => (prev + 1) % selectedProject.images.length);
+    };
+
+    const prevImage = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!selectedProject) return;
+        setCurrentImageIndex((prev) => (prev - 1 + selectedProject.images.length) % selectedProject.images.length);
+    };
+
     return (
         <div className="pt-20 bg-bg-primary">
+            {/* Modal / Lightbox */}
+            {selectedProject && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fadeIn"
+                    onClick={closeProject}
+                >
+                    <div className="relative w-full max-w-6xl max-h-[90vh] flex flex-col items-center">
+                        <button
+                            onClick={closeProject}
+                            className="absolute -top-12 right-0 text-white/70 hover:text-white transition-colors"
+                        >
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        <div
+                            className="relative w-full h-[60vh] md:h-[80vh] flex items-center justify-center rounded-2xl overflow-hidden bg-black/50"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {selectedProject.images.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={prevImage}
+                                        className="absolute left-4 z-10 p-3 rounded-full bg-black/50 text-white hover:bg-white hover:text-black transition-all"
+                                    >
+                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onClick={nextImage}
+                                        className="absolute right-4 z-10 p-3 rounded-full bg-black/50 text-white hover:bg-white hover:text-black transition-all"
+                                    >
+                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </>
+                            )}
+
+                            {selectedProject.images[currentImageIndex].includes('/') ? (
+                                <img
+                                    src={selectedProject.images[currentImageIndex]}
+                                    alt={selectedProject.title}
+                                    className="max-w-full max-h-full object-contain animate-fadeIn"
+                                    key={currentImageIndex} // Force re-render for animation
+                                />
+                            ) : (
+                                <div className="text-9xl animate-fadeIn key={currentImageIndex}">
+                                    {selectedProject.images[currentImageIndex]}
+                                </div>
+                            )}
+
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                                {selectedProject.images.map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
+                                        className={`w-2 h-2 rounded-full transition-all ${idx === currentImageIndex ? 'bg-white w-6' : 'bg-white/30 hover:bg-white/60'}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="mt-6 text-center text-white">
+                            <h3 className="text-2xl font-bold">{selectedProject.title}</h3>
+                            <p className="text-white/60">{selectedProject.category}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <section className="bg-bg-secondary py-24 text-center text-text-primary border-b border-border">
                 <div className="container mx-auto px-6">
                     <h1 className="animate-fadeInUp text-4xl md:text-5xl font-bold mb-6">Nosso Portfólio</h1>
@@ -76,7 +195,8 @@ const Portfolio: React.FC = () => {
                         {portfolioItems.map((item, index) => (
                             <div
                                 key={index}
-                                className="group relative perspective-1000 animate-fadeInUp"
+                                onClick={() => openProject(item)}
+                                className="group relative perspective-1000 animate-fadeInUp cursor-pointer"
                                 style={{ animationDelay: `${index * 0.1}s` }}
                             >
                                 <div className="relative w-full transition-all duration-300 hover:-translate-y-2">
@@ -110,6 +230,11 @@ const Portfolio: React.FC = () => {
                                                     <span className="group-hover:scale-110 transition-transform duration-300">{item.images[0]}</span>
                                                 </div>
                                             )}
+
+                                            {/* View More Overlay */}
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <span className="text-white font-bold px-4 py-2 border-2 border-white rounded-full text-sm shadow-sm">Ver Projeto</span>
+                                            </div>
                                         </div>
                                         <div className="p-8 text-left bg-bg-tertiary rounded-b-2xl border border-t-0 border-border group-hover:border-primary/30 transition-colors duration-300 relative z-30">
                                             <h3 className="mb-2 text-text-primary font-bold text-xl">{item.title}</h3>
@@ -140,7 +265,7 @@ const Portfolio: React.FC = () => {
                                     {item.videoUrl ? (
                                         <video
                                             controls
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-contain"
                                             preload="metadata"
                                         >
                                             <source src={item.videoUrl} type="video/mp4" />
