@@ -7,7 +7,7 @@ interface HeroProps {
 
 const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
     return (
-        <section className="relative min-h-[90vh] flex items-center overflow-hidden py-32 bg-bg-primary">
+        <section className="h-[170vh] relative min-h-[90vh] flex items-center overflow-hidden py-32 bg-bg-primary">
             {/* Background Effects */}
             {/* Background Effects */}
             <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
@@ -69,6 +69,32 @@ const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
                         <div className="flex flex-col items-center">
                             <span className="text-3xl font-black text-text-primary mb-1">24h</span>
                             <span className="text-text-tertiary text-sm font-medium uppercase tracking-wider">Suporte Dedicado</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Team Experience Carousel */}
+                <div className="mt-20 pt-10 border-t border-border/40 animate-[fadeInUp_0.6s_ease-out_0.5s_forwards] opacity-0">
+                    <p className="text-center text-sm font-semibold text-text-tertiary uppercase tracking-widest mb-8">
+                        Experiência do time
+                    </p>
+                    <div className="relative w-full overflow-hidden mask-linear-fade">
+                        {/* Gradient Masks */}
+                        <div className="absolute top-0 left-0 w-20 h-full bg-gradient-to-r from-bg-primary to-transparent z-10"></div>
+                        <div className="absolute top-0 right-0 w-20 h-full bg-gradient-to-l from-bg-primary to-transparent z-10"></div>
+
+                        {/* Carousel Track */}
+                        <div className="flex gap-12 sm:gap-20 w-max animate-scroll">
+                            {/* Original + Duplicate for infinite scroll */}
+                            {[...Array(2)].map((_, i) => (
+                                <React.Fragment key={i}>
+                                    {["Fabrizio construtora", "Garagem JVC", "AppCrafters", "SW soluções integradas", "S2 Solution", "V4", "7Arte e Design"].map((company, index) => (
+                                        <div key={`${i}-${index}`} className="flex items-center justify-center opacity-40 hover:opacity-80 transition-opacity duration-300 grayscale hover:grayscale-0">
+                                            <span className="text-xl sm:text-2xl font-bold text-white font-display">{company}</span>
+                                        </div>
+                                    ))}
+                                </React.Fragment>
+                            ))}
                         </div>
                     </div>
                 </div>

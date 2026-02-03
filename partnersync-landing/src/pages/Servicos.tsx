@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface ServiceItem {
     title: string;
@@ -11,6 +12,8 @@ interface ServiceItem {
 }
 
 const Servicos: React.FC = () => {
+    const navigate = useNavigate();
+
     const processSteps = [
         {
             step: '01',
@@ -39,7 +42,6 @@ const Servicos: React.FC = () => {
                 'Produção de Conteúdo Estratégico',
                 'Copywriting & Scripts de Vendas',
                 'Consultoria Mensal de Negócios',
-                'Relatórios de Performance em Tempo Real'
             ],
             results: 'Crescimento Médio: +200%',
             highlight: true
@@ -48,7 +50,7 @@ const Servicos: React.FC = () => {
             title: 'Gestão de Tráfego',
             icon: '📈',
             description: 'Compramos dinheiro com desconto. Campanhas matematicamente otimizadas para colocar seu produto na frente de quem já quer comprar.',
-            features: ['Facebook & Instagram Ads', 'Google & YouTube Ads', 'Remarketing Inteligente', 'Dashboards ao vivo'],
+            features: ['Facebook & Instagram Ads', 'Google & YouTube Ads', 'Remarketing Inteligente'],
             results: 'ROI Médio: 4.8x'
         },
         {
@@ -64,6 +66,13 @@ const Servicos: React.FC = () => {
             description: 'Páginas que não apenas informam, mas convertem. Design persuasivo otimizado para transformar visitantes em leads qualificados.',
             features: ['Design de Alta Conversão', 'Copywriting Persuasivo', 'Velocidade Extrema', 'Otimização Mobile'],
             results: 'Conversão: +180%'
+        },
+        {
+            title: 'Sistema PartnerSync',
+            icon: '⚡',
+            description: 'A inteligência central do seu negócio. CRM, Financeiro, Projetos e IA integrados para eliminar o caos e escalar sua operação.',
+            features: ['CRM & Funil de Vendas', 'Gestão Financeira Completa', 'Gestão de Tarefas & Projetos', 'Automação com IA'],
+            results: 'Produtividade: +300%'
         }
     ];
 
@@ -184,15 +193,15 @@ const Servicos: React.FC = () => {
                                             <span className="">{service.results}</span>
                                         </div>
                                     )}
-                                    <a
-                                        href="/contato"
+                                    <button
+                                        onClick={() => navigate('/contato', { state: { service: service.title } })}
                                         className={`w-full flex items-center justify-center px-6 py-4 rounded-xl font-bold transition-all duration-300 ${service.highlight
                                             ? 'bg-accent text-white shadow-lg shadow-accent/25 hover:shadow-accent/40 hover:-translate-y-1'
                                             : 'bg-transparent border-2 border-primary text-primary hover:bg-primary/10 hover:border-primary hover:text-primary-light'
                                             }`}
                                     >
                                         Solicitar Análise
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         ))}

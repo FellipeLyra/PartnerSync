@@ -137,7 +137,7 @@ const StepThree: React.FC<StepProps> = ({ formData, handleChange, errors }) => (
                 name="message"
                 value={formData.message}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-bg-secondary/30 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none min-h-[100px] resize-none"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-bg-secondary text-text-primary focus:bg-bg-tertiary focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none min-h-[100px] resize-none"
                 placeholder="Como podemos te ajudar?"
             />
         </div>
@@ -173,13 +173,13 @@ const InputField: React.FC<InputFieldProps> = ({ label, error, className, ...pro
 interface LeadFormProps {
     onSuccess: () => void;
     compact?: boolean;
+    initialInterest?: string;
 }
 
 interface LeadFormContentProps extends ReturnType<typeof useLeadForm> {
     onSuccess: () => void;
     compact: boolean;
 }
-
 const LeadFormContent: React.FC<LeadFormContentProps> = ({
     step,
     formData,
@@ -192,68 +192,72 @@ const LeadFormContent: React.FC<LeadFormContentProps> = ({
     onSuccess,
     compact
 }) => {
-    const renderStep = () => {
-        const props = { formData, handleChange, errors };
-        switch (step) {
-            case 1: return <StepOne {...props} />;
-            case 2: return <StepTwo {...props} />;
-            case 3: return <StepThree {...props} />;
-            default: return null;
-        }
-    };
-
     return (
-        <div className={`bg-bg-tertiary rounded-3xl ${compact ? '' : 'shadow-2xl shadow-primary/10 border border-border'} overflow-hidden animate-fadeInUp h-full`}>
-            {/* Added p-6 sm:p-8 for padding in compact mode to ensure it's not compressed */}
-            <div className={`${compact ? 'p-6 sm:p-8' : 'p-8 sm:p-10'} h-full flex flex-col`}>
-                <ProgressBar step={step} />
+        <div className={`bg-bg-tertiary rounded-2xl border border-border/50 shadow-xl ${compact ? 'p-6' : 'p-8 w-full'}`}>
+            <ProgressBar step={step} />
 
-                <form onSubmit={(e) => handleSubmit(e, onSuccess)} className={`flex flex-col justify-between ${compact ? 'flex-1' : 'min-h-[350px]'}`}>
-                    <div className="flex-1">
-                        {renderStep()}
-                        {errors.submit && (
-                            <div className="mt-4 p-3 bg-red-900/20 text-red-200 rounded-lg text-sm text-center border border-red-500/20">
-                                {errors.submit}
-                            </div>
-                        )}
-                    </div>
+            <form onSubmit={(e) => handleSubmit(e, onSuccess)}>
+                <div className="min-h-[300px]">
+                    {step === 1 && <StepOne formData={formData} handleChange={handleChange} errors={errors} />}
+                    {step === 2 && <StepTwo formData={formData} handleChange={handleChange} errors={errors} />}
+                    {step === 3 && <StepThree formData={formData} handleChange={handleChange} errors={errors} />}
+                </div>
 
-                    <div className="flex gap-4 mt-8 pt-6 border-t border-border/50">
-                        {step > 1 && (
-                            <button
-                                type="button"
-                                onClick={handleBack}
-                                className="px-6 py-3 rounded-xl font-semibold text-text-secondary hover:bg-bg-secondary transition-colors"
-                            >
-                                Voltar
-                            </button>
-                        )}
+                <div className="mt-8 flex gap-4">
+                    {step > 1 && (
                         <button
-                            type={step === 3 ? 'submit' : 'button'}
-                            onClick={step === 3 ? undefined : handleNext}
+                            key="back-btn"
+                            type="button"
+                            onClick={handleBack}
+                            className="w-full py-4 rounded-xl border border-border text-text-primary font-bold hover:bg-bg-secondary transition-all disabled:opacity-50"
                             disabled={loading}
-                            className="flex-1 bg-primary text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                        >
+                            Voltar
+                        </button>
+                    )}
+
+                    {step < 3 ? (
+                        <button
+                            key="next-btn"
+                            type="button"
+                            onClick={handleNext}
+                            className="w-full py-4 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/25"
+                        >
+                            Próximo
+                        </button>
+                    ) : (
+                        <button
+                            key="submit-btn"
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-4 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/25 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {loading ? (
-                                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                            ) : (
                                 <>
-                                    {step === 3 ? 'Solicitar Análise Gratuita' : 'Continuar'}
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
+                                    Enviando...
                                 </>
+                            ) : (
+                                'Enviar Solicitação'
                             )}
                         </button>
+                    )}
+                </div>
+
+                {errors.submit && (
+                    <div className="mt-4 p-4 bg-error/10 text-error rounded-xl text-center text-sm">
+                        {errors.submit}
                     </div>
-                </form>
-            </div>
+                )}
+            </form>
         </div>
     );
 };
-
-const LeadForm: React.FC<LeadFormProps> = ({ onSuccess, compact = false }) => {
-    const leadForm = useLeadForm();
+const LeadForm: React.FC<LeadFormProps> = ({ onSuccess, compact = false, initialInterest }) => {
+    const leadForm = useLeadForm({ interest: initialInterest });
 
     if (compact) {
         return <LeadFormContent {...leadForm} onSuccess={onSuccess} compact={compact} />;

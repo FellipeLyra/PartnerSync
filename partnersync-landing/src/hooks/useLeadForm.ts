@@ -13,7 +13,7 @@ interface UseLeadFormReturn {
     handleSubmit: (e: React.FormEvent, onSuccess: () => void) => Promise<void>;
 }
 
-export const useLeadForm = (): UseLeadFormReturn => {
+export const useLeadForm = (initialData: Partial<LeadFormData> = {}): UseLeadFormReturn => {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -25,7 +25,8 @@ export const useLeadForm = (): UseLeadFormReturn => {
         organizationName: '',
         role: '',
         interest: '',
-        message: ''
+        message: '',
+        ...initialData
     });
 
     const validateStep = (currentStep: number): boolean => {
@@ -97,10 +98,34 @@ export const useLeadForm = (): UseLeadFormReturn => {
             return;
         }
 
+        // RATE LIMITING
+        const lastSubmission = localStorage.getItem('last_lead_submission');
+        if (lastSubmission) {
+            const timeSince = Date.now() - parseInt(lastSubmission);
+            if (timeSince < 5 * 60 * 1000) { // 5 minutes
+                setErrors({ submit: 'Muitas tentativas. Por favor, aguarde alguns minutos antes de tentar novamente.' });
+                return;
+            }
+        }
+
+        // SANITIZATION
+        const sanitize = (str: string) => str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const sanitizedData = {
+            ...formData,
+            name: sanitize(formData.name),
+            email: sanitize(formData.email),
+            phone: sanitize(formData.phone),
+            organizationName: sanitize(formData.organizationName || ''),
+            role: sanitize(formData.role || ''),
+            interest: sanitize(formData.interest || ''),
+            message: sanitize(formData.message || '')
+        };
+
         setLoading(true);
 
         try {
-            await LeadService.submitLead(formData);
+            await LeadService.submitLead(sanitizedData);
+            localStorage.setItem('last_lead_submission', Date.now().toString());
             onSuccess();
         } catch (error) {
             console.error('Error submitting lead:', error);

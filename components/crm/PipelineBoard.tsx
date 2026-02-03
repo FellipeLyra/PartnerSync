@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { User, Deal, TaskStatus, Client } from '../../types'; // Re-trigger save
 import { crmService } from '../../services/crmService';
+import { financeService } from '../../services/financeService';
 import { Plus, MoreVertical, DollarSign, Calendar, AlertCircle } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 interface PipelineBoardProps {
     currentUser: User;
@@ -24,6 +27,8 @@ const PipelineBoard: React.FC<PipelineBoardProps> = ({ currentUser, companyId })
     const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState<Partial<Deal>>({ stageId: 'PROSPECT', status: 'OPEN' });
+    const { addToast } = useToast();
+    const confirm = useConfirm();
 
     useEffect(() => {
         const unsubDeals = crmService.subscribeDeals(companyId, (data) => setDeals(data));
@@ -47,13 +52,30 @@ const PipelineBoard: React.FC<PipelineBoardProps> = ({ currentUser, companyId })
             if (stageId === 'LOST') status = 'LOST';
 
             await crmService.saveDeal({ ...deal, stageId, status });
+
+            // AUTOMATION: Create Income Transaction if WON
+            if (status === 'WON' && deal.stageId !== 'WON') {
+                await financeService.saveTransaction({
+                    id: '',
+                    companyId,
+                    description: `Venda CRM: ${deal.title}`,
+                    amount: deal.value,
+                    type: 'INCOME',
+                    category: 'Vendas',
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'PAID', // Defined as PAID per user request
+                    createdAt: Date.now(),
+                    createdBy: currentUser.id
+                });
+                addToast("Receita registrada no financeiro!", 'success');
+            }
         }
         setDraggedDealId(null);
     };
 
     const handleSave = async () => {
         if (!formData.title || !companyId || !formData.clientId) {
-            alert("Preencha o título e selecione um cliente.");
+            addToast("Preencha o título e selecione um cliente.", 'warning');
             return;
         }
 
@@ -75,8 +97,9 @@ const PipelineBoard: React.FC<PipelineBoardProps> = ({ currentUser, companyId })
             await crmService.saveDeal(dealToSave);
             setShowModal(false);
             setFormData({ stageId: 'PROSPECT', status: 'OPEN' });
+            addToast("Negócio salvo com sucesso!", 'success');
         } catch (e) {
-            alert("Erro ao salvar negócio.");
+            addToast("Erro ao salvar negócio.", 'error');
         }
     };
 
@@ -214,9 +237,14 @@ const PipelineBoard: React.FC<PipelineBoardProps> = ({ currentUser, companyId })
                         <div className="flex justify-between items-center mt-8">
                             {formData.id && (
                                 <button type="button" onClick={async () => {
-                                    if (confirm("Excluir este negócio?")) {
+                                    if (await confirm({
+                                        title: 'Excluir Negócio?',
+                                        message: 'Tem certeza que deseja excluir este negócio?',
+                                        isDestructive: true
+                                    })) {
                                         await crmService.deleteDeal(formData.id!);
                                         setShowModal(false);
+                                        addToast("Negócio excluído.", 'success');
                                     }
                                 }} className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm">Excluir</button>
                             )}

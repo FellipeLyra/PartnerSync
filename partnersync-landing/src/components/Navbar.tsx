@@ -17,20 +17,23 @@ const Navbar: React.FC = () => {
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-secondary/90 backdrop-blur-md shadow-lg shadow-black/20 py-4' : 'bg-transparent py-6'}`}>
             <div className="container mx-auto px-6 flex items-center justify-between">
-                <Link to="/" className="flex items-center gap-2 group z-50 relative">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 overflow-hidden">
-                        <img
-                            src="/logo.linkate.png"
-                            alt="Linkatech Logo"
-                            className="w-full h-full object-contain"
-                        />
-                    </div>
-                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-text-primary to-primary-dark tracking-tight">
-                        Linkate
-                    </span>
-                </Link>
+                {/* Left: Logo */}
+                <div className="flex-1 flex justify-start">
+                    <Link to="/" className="flex items-center gap-2 group z-50 relative">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 overflow-hidden">
+                            <img
+                                src="/logo.linkate.png"
+                                alt="Linkatech Logo"
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-text-primary to-primary-dark tracking-tight">
+                            Linkate
+                        </span>
+                    </Link>
+                </div>
 
-                {/* Desktop Menu */}
+                {/* Center: Desktop Menu */}
                 <div className="hidden lg:flex items-center gap-10 bg-white/5 backdrop-blur-sm px-8 py-3 rounded-full border border-white/10 shadow-sm">
                     {['Serviços', 'Portfólio', 'Cases', 'Sobre'].map((item) => (
                         <Link
@@ -44,7 +47,8 @@ const Navbar: React.FC = () => {
                     ))}
                 </div>
 
-                <div className="flex items-center gap-4">
+                {/* Right: CTA & Mobile Toggle */}
+                <div className="flex-1 flex justify-end items-center gap-4">
                     <Link to="/contato" className="hidden sm:inline-flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:bg-accent-dark hover:shadow-lg hover:shadow-accent/25 hover:-translate-y-0.5">
                         <span>Começar Agora</span>
                         <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none">
@@ -66,7 +70,7 @@ const Navbar: React.FC = () => {
             </div>
 
             {/* Mobile Menu Overlay */}
-            <div className={`fixed inset-0 bg-white z-40 flex flex-col items-center justify-center gap-8 transition-all duration-500 lg:hidden ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+            <div className={`fixed inset-0 bg-bg-primary/95 backdrop-blur-xl z-40 flex flex-col items-center justify-center gap-8 transition-all duration-500 lg:hidden ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
                 {['Serviços', 'Portfólio', 'Cases', 'Sobre'].map((item, idx) => (
                     <Link
                         key={item}

@@ -73,6 +73,7 @@ export interface Project {
   description: string;
   tasks: Task[];
   columns?: Column[]; // If undefined, use defaults
+  assignedUserId?: string; // ID of the user responsible for this project
   createdAt: number;
 }
 
@@ -127,10 +128,14 @@ export interface Client {
   revenueHistory?: number; // Total revenue generated from this client
   leadSource?: string; // e.g., "Website", "Referral"
   website?: string;
+  instagram?: string;
   tags?: string[];
   notes?: string;
   address?: string;
   createdAt: number;
+  checkEmail?: boolean;
+  checkWhatsapp?: boolean;
+  checkPhone?: boolean;
 }
 
 export interface Deal {

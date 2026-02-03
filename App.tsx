@@ -11,6 +11,9 @@ import FinanceDashboard from './components/FinanceDashboard';
 import TeamManagement from './components/TeamManagement';
 import CRMLayout from './components/crm/CRMLayout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
+import { ConfirmProvider } from './contexts/ConfirmContext';
+import ToastContainer from './components/ui/ToastContainer';
 
 // --- SUB-COMPONENTS FOR CLEANER APP.TSX ---
 
@@ -21,8 +24,26 @@ const ConfigErrorView: React.FC = () => {
     const rules = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    function isSignedIn() { return request.auth != null; }
+    function belongsToCompany(companyId) { return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId; }
+    
+    match /{document=**} { allow read, write: if false; }
+    
+    match /users/{userId} {
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && (request.auth.uid == userId || belongsToCompany(resource.data.companyId));
+      allow update: if isSignedIn() && request.auth.uid == userId;
+    }
+    
+    match /companies/{companyId} {
+      allow create: if isSignedIn();
+      allow read: if belongsToCompany(companyId);
+      allow update: if belongsToCompany(companyId) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+    
+    match /{collection}/{docId} {
+      allow create: if belongsToCompany(request.resource.data.companyId);
+      allow read, update, delete: if belongsToCompany(resource.data.companyId);
     }
   }
 }`;
@@ -60,8 +81,28 @@ service cloud.firestore {
             {`rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    // Helper Functions
+    function isSignedIn() { return request.auth != null; }
+    function belongsToCompany(companyId) { return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId; }
+    
+    match /{document=**} { allow read, write: if false; }
+    
+    match /users/{userId} {
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && (request.auth.uid == userId || belongsToCompany(resource.data.companyId));
+      allow update: if isSignedIn() && request.auth.uid == userId;
+    }
+    
+    match /companies/{companyId} {
+      allow create: if isSignedIn();
+      allow read: if belongsToCompany(companyId);
+      allow update: if belongsToCompany(companyId) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+    
+    // Multi-tenant Collections
+    match /{collection}/{docId} {
+      allow create: if belongsToCompany(request.resource.data.companyId);
+      allow read, update, delete: if belongsToCompany(resource.data.companyId);
     }
   }
 }`}
@@ -190,7 +231,12 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <ConfirmProvider>
+        <ToastProvider>
+          <AppContent />
+          <ToastContainer />
+        </ToastProvider>
+      </ConfirmProvider>
     </AuthProvider>
   );
 };

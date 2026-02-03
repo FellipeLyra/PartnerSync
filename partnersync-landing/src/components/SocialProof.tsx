@@ -3,16 +3,16 @@ import React from 'react';
 const SocialProof: React.FC = () => {
     const testimonials = [
         {
-            name: 'Carla Mendes',
-            role: 'Proprietária, Boutique Elegance',
-            avatar: '👗',
-            text: 'Em 3 meses com a Viral Studio, nossas vendas online triplicaram! O conteúdo visual é impecável e as campanhas de tráfego trouxeram clientes qualificados.'
+            name: 'João Vitor Carmo',
+            role: 'Proprietário, Garagem JVC',
+            avatar: <img src="/Avatar/João.png" alt="João Vitor Carmo" className="w-full h-full object-cover rounded-full" />,
+            text: 'A equipe do Linkate são comprometidos, criativos e extremamente proativos. Foram responsáveis por todo o branding da Garagem JVC, e o resultado ficou simplesmente impecável! Seu trabalho como designer UX/UI superou todas as expectativas. Super indico a Linkate para qualquer pessoa que precise de profissionais talentosos e dedicados na área de design!'
         },
         {
             name: 'Ricardo Alves',
             role: 'Fundador, FitLife Academia',
             avatar: '💪',
-            text: 'A equipe da Viral Studio entende de resultados. Nosso Instagram cresceu 250% e o ROI das campanhas superou todas as expectativas.'
+            text: 'A equipe da Linkate entende de resultados. Nosso Instagram cresceu 250% e o ROI das campanhas superou todas as expectativas.'
         },
         {
             name: 'Juliana Costa',

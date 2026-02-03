@@ -1,9 +1,11 @@
 import React from 'react';
 import LeadForm from '../components/LeadForm';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Contato: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const initialInterest = location.state?.service;
 
     const handleSuccess = () => {
         navigate('/');
@@ -91,7 +93,7 @@ const Contato: React.FC = () => {
                                     <h3 className="text-2xl font-bold text-center">Envie uma Mensagem</h3>
                                 </div>
                                 <div className="[&_.lead-form-section]:p-0 [&_.lead-form-section]:bg-transparent [&_.lead-form-section]:before:hidden [&_.form-container]:shadow-none [&_.form-container]:bg-transparent [&_.form-container]:border-0 [&_.form-header]:hidden">
-                                    <LeadForm onSuccess={handleSuccess} compact={true} />
+                                    <LeadForm onSuccess={handleSuccess} compact={true} initialInterest={initialInterest} />
                                 </div>
                             </div>
                         </div>

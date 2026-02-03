@@ -52,6 +52,7 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
             organizationName: formData.organizationName,
             role: formData.role,
             linkedinProfile: formData.linkedinProfile,
+            instagram: formData.instagram,
             createdAt: formData.createdAt || Date.now(),
         };
 
@@ -68,6 +69,11 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
         if (confirm("Tem certeza que deseja excluir este cliente? Todas as interações serão perdidas.")) {
             await crmService.deleteClient(clientId);
         }
+    };
+
+    const toggleCheck = async (client: Client, field: 'checkEmail' | 'checkWhatsapp' | 'checkPhone') => {
+        const updatedClient = { ...client, [field]: !client[field] };
+        await crmService.saveClient(updatedClient);
     };
 
     return (
@@ -155,27 +161,54 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                                                 </div>
                                             )}
                                             {!client.email && !client.phone && <span className="text-slate-400 dark:text-slate-600 text-xs">-</span>}
+
+                                            {/* CHECKBOXES */}
+                                            <div className="mt-2 flex flex-col gap-1 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                                <label className="flex items-center gap-2 cursor-pointer group/check">
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${client.checkEmail ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'}`}>
+                                                        {client.checkEmail && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
+                                                    </div>
+                                                    <input type="checkbox" className="hidden" checked={!!client.checkEmail} onChange={() => toggleCheck(client, 'checkEmail')} />
+                                                    <span className={`text-xs ${client.checkEmail ? 'text-indigo-600 font-medium' : 'text-slate-400 group-hover/check:text-slate-600 dark:group-hover/check:text-slate-300'}`}>Email</span>
+                                                </label>
+
+                                                <label className="flex items-center gap-2 cursor-pointer group/check">
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${client.checkWhatsapp ? 'bg-green-600 border-green-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'}`}>
+                                                        {client.checkWhatsapp && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
+                                                    </div>
+                                                    <input type="checkbox" className="hidden" checked={!!client.checkWhatsapp} onChange={() => toggleCheck(client, 'checkWhatsapp')} />
+                                                    <span className={`text-xs ${client.checkWhatsapp ? 'text-green-600 font-medium' : 'text-slate-400 group-hover/check:text-slate-600 dark:group-hover/check:text-slate-300'}`}>WhatsApp</span>
+                                                </label>
+
+                                                <label className="flex items-center gap-2 cursor-pointer group/check">
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${client.checkPhone ? 'bg-blue-600 border-blue-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'}`}>
+                                                        {client.checkPhone && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
+                                                    </div>
+                                                    <input type="checkbox" className="hidden" checked={!!client.checkPhone} onChange={() => toggleCheck(client, 'checkPhone')} />
+                                                    <span className={`text-xs ${client.checkPhone ? 'text-blue-600 font-medium' : 'text-slate-400 group-hover/check:text-slate-600 dark:group-hover/check:text-slate-300'}`}>Telefone</span>
+                                                </label>
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex items-center gap-2">
                                             {/* Role / Instagram */}
-                                            {client.role && (
-                                                <>
-                                                    {(client.role.startsWith('@') || client.role.includes('instagram')) ? (
-                                                        <a
-                                                            href={client.role.startsWith('http') ? client.role : `https://instagram.com/${client.role.replace('@', '')}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="p-2 rounded-lg bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors"
-                                                            title={client.role}
-                                                        >
-                                                            <Instagram size={18} />
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded dark:bg-slate-800 dark:text-slate-400">{client.role}</span>
-                                                    )}
-                                                </>
+                                            {/* Instagram */}
+                                            {(client.instagram || (client.role && client.role.includes('instagram'))) && (
+                                                <a
+                                                    href={client.instagram ? (client.instagram.startsWith('http') ? client.instagram : `https://instagram.com/${client.instagram.replace('@', '')}`) : (client.role && client.role.startsWith('http') ? client.role : `https://instagram.com/${client.role?.replace('@', '')}`)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-2 rounded-lg bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors"
+                                                    title={client.instagram || client.role}
+                                                >
+                                                    <Instagram size={18} />
+                                                </a>
+                                            )}
+
+                                            {/* Role Badge (Only if not instagram) */}
+                                            {client.role && !client.role.includes('instagram') && !client.role.startsWith('@') && (
+                                                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded dark:bg-slate-800 dark:text-slate-400">{client.role}</span>
                                             )}
 
                                             {/* Website / LinkedIn */}
@@ -185,8 +218,8 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className={`p-2 rounded-lg transition-colors ${client.linkedinProfile.includes('linkedin')
-                                                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40'
-                                                            : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                                                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                                                        : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
                                                         }`}
                                                     title={client.linkedinProfile.includes('linkedin') ? 'LinkedIn' : 'Website'}
                                                 >
@@ -279,9 +312,15 @@ const CRMClientList: React.FC<ClientListProps> = ({ currentUser, companyId }) =>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Telefone / WhatsApp</label>
                                 <input type="text" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-colors" />
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">LinkedIn (URL)</label>
-                                <input type="text" value={formData.linkedinProfile || ''} onChange={e => setFormData({ ...formData, linkedinProfile: e.target.value })} className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-colors" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">LinkedIn (URL)</label>
+                                    <input type="text" value={formData.linkedinProfile || ''} onChange={e => setFormData({ ...formData, linkedinProfile: e.target.value })} className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-colors" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Instagram (@ ou URL)</label>
+                                    <input type="text" value={formData.instagram || ''} onChange={e => setFormData({ ...formData, instagram: e.target.value })} className="w-full bg-gray-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-colors" />
+                                </div>
                             </div>
                         </div>
 

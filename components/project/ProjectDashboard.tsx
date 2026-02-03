@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DEFAULT_STATUSES } from '../../types';
 import type { Project, Task, User, TaskStatus, Column } from '../../types';
 import { storageService } from '../../services/storageService';
+import { projectService } from '../../services/projectService';
 import { ProjectSidebar } from './ProjectSidebar';
 import { ProjectHeader } from './ProjectHeader';
 import { ListView } from './views/ListView';
@@ -171,15 +172,19 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ currentUser,
         if (!project) return;
 
         let updatedTasks = [...project.tasks];
+        let taskToMove: Task | null = null;
+        let finalProject = project;
 
         if (editingTask) {
             // Find which project the task actually belongs to (might not be activeProject in Global view)
             const originalProject = projects.find(p => p.tasks.some(t => t.id === editingTask.id));
             if (originalProject) {
+                finalProject = originalProject;
                 const pTasks = [...originalProject.tasks];
                 const tIndex = pTasks.findIndex(t => t.id === editingTask.id);
                 if (tIndex > -1) {
                     pTasks[tIndex] = { ...pTasks[tIndex], ...taskData };
+                    taskToMove = pTasks[tIndex] as Task;
                     await storageService.updateProject({ ...originalProject, tasks: pTasks });
                 }
             }
@@ -192,12 +197,19 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ currentUser,
                 priority: taskData.priority || 'MEDIUM',
                 dueDate: taskData.dueDate,
                 mediaUrl: taskData.mediaUrl,
+                assignee: taskData.assignee, // Ensure assignee is included
                 createdAt: Date.now(),
             };
             updatedTasks.push(newTask);
+            taskToMove = newTask;
             await storageService.updateProject({ ...project, tasks: updatedTasks });
         }
         setShowTaskModal(false);
+
+        // Handle Assignment Logic (Move task to user's project if needed)
+        if (taskToMove && taskToMove.assignee) {
+            await projectService.handleTaskAssignment(taskToMove, finalProject.id, companyId, users);
+        }
     };
 
     const handleDeleteTask = async (taskId: string) => {
@@ -219,6 +231,11 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ currentUser,
                 await storageService.updateProject({ ...project, tasks: newTasks });
             }
         }
+    };
+
+    const handleProjectAssignment = async (userId: string) => {
+        if (!activeProjectId) return;
+        await projectService.assignProjectToUser(activeProjectId, userId);
     };
 
     const handlePageTitle = () => {
@@ -249,6 +266,10 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ currentUser,
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
                     title={handlePageTitle()}
+                    users={users}
+                    project={activeProject}
+                    onAssignProject={handleProjectAssignment}
+                    currentUser={currentUser}
                 />
 
                 <div className="flex-1 overflow-hidden relative bg-slate-50 dark:bg-slate-900/50">

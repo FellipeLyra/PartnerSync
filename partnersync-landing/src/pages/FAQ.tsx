@@ -34,7 +34,7 @@ const FAQ: React.FC = () => {
         },
         {
             question: 'Como acompanho os resultados?',
-            answer: 'Fornecemos relatórios mensais detalhados e você tem acesso a um dashboard em tempo real para acompanhar as métricas.'
+            answer: 'Fornecemos relatórios mensais detalhados para acompanhar as métricas. Elaborando melhores estratégias para alcançar os resultados desejados.'
         }
     ];
 

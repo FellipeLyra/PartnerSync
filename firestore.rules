@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- HELPER FUNCTIONS ---
+    
+    // Check if user is signed in
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Get the user's data from the users collection
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Check if the user belongs to the company specified in the document
+    function belongsToCompany(companyId) {
+      return isSignedIn() && getUserData().companyId == companyId;
+    }
+
+    // Check if the user is a Super Admin
+    function isSuperAdmin() {
+      return isSignedIn() && getUserData().role == 'SUPER_ADMIN';
+    }
+
+    // Check if the user is an Admin of the company
+    function isCompanyAdmin(companyId) {
+      return belongsToCompany(companyId) && getUserData().role == 'ADMIN';
+    }
+
+    // --- RULES ---
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users Collection
+    // Users can read/write their own profile upon creation (setup) 
+    // or if they are authenticated and accessing their own doc.
+    match /users/{userId} {
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && (request.auth.uid == userId || belongsToCompany(resource.data.companyId));
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if isSuperAdmin();
+    }
+
+    // Companies Collection
+    match /companies/{companyId} {
+      // Anyone can create a company (on sign up)
+      allow create: if isSignedIn(); 
+      // Users can read their own company
+      allow read: if belongsToCompany(companyId);
+      // Only Company Admins can update company details
+      allow update: if isCompanyAdmin(companyId);
+    }
+
+    // Multi-tenant Collections
+    // For these collections, we ensure the user belongs to the companyId on the document
+    
+    match /clients/{clientId} {
+      allow create: if belongsToCompany(request.resource.data.companyId);
+      allow read, update, delete: if belongsToCompany(resource.data.companyId);
+    }
+
+    match /projects/{projectId} {
+      allow create: if belongsToCompany(request.resource.data.companyId);
+      allow read, update, delete: if belongsToCompany(resource.data.companyId);
+    }
+
+    match /tasks/{taskId} {
+      allow create: if belongsToCompany(request.resource.data.companyId);
+      allow read, update, delete: if belongsToCompany(resource.data.companyId);
+    }
+    
+    match /deals/{dealId} {
+      allow create: if belongsToCompany(request.resource.data.companyId);
+      allow read, update, delete: if belongsToCompany(resource.data.companyId);
+    }
+
+    match /interactions/{interactionId} {
+      allow create: if belongsToCompany(request.resource.data.companyId);
+      allow read, update, delete: if belongsToCompany(resource.data.companyId);
+    }
+    
+    match /transactions/{transactionId} {
+      allow create: if belongsToCompany(request.resource.data.companyId);
+      allow read, update, delete: if belongsToCompany(resource.data.companyId);
+    }
+
+    match /messages/{messageId} {
+      allow create: if belongsToCompany(request.resource.data.companyId);
+      allow read, update, delete: if belongsToCompany(resource.data.companyId);
+    }
+    
+    match /leads/{leadId} {
+       // Leads from Landing Page (Public Write)
+       allow create: if true;
+       // Only authenticated users can manage leads
+       allow read, update, delete: if isSignedIn();
+    }
+  }
+}

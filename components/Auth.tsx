@@ -3,7 +3,8 @@ import { User, Company } from '../types';
 import { auth, googleProvider } from '../firebaseConfig';
 import * as firebaseAuth from 'firebase/auth';
 import { storageService } from '../services/storageService';
-import { Users, ArrowRight, Mail, Lock, User as UserIcon, Chrome, AlertTriangle, Copy, Phone } from 'lucide-react';
+import { Users, ArrowRight, Mail, Lock, User as UserIcon, Chrome, AlertTriangle, Copy, Phone, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 
 interface AuthProps {
   onLogin: (user: User) => void;
@@ -13,12 +14,16 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState(''); // New: Confirm Password
+  const [showPassword, setShowPassword] = useState(false); // New: Toggle Password
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // New: Toggle Confirm Password
   const [username, setUsername] = useState('');
-  const [phone, setPhone] = useState(''); // New phone state
-  const [inviteCode, setInviteCode] = useState(''); // New state for invite code
-  const [isJoining, setIsJoining] = useState(false); // Toggle between creating and joining
+  const [phone, setPhone] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { addToast } = useToast(); // New: Toast hook
 
   // Helper to sync Firebase Auth user to our DB User
   const handleAuthSuccess = async (firebaseUser: any, customUsername?: string) => {
@@ -142,15 +147,30 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           setLoading(false);
           return;
         }
+
+        if (password !== confirmPassword) {
+          setError("As senhas não coincidem.");
+          setLoading(false);
+          return;
+        }
+
         const userCredential = await firebaseAuth.createUserWithEmailAndPassword(auth, email, password);
         await firebaseAuth.updateProfile(userCredential.user, { displayName: username });
+
+        // Email Verification
+        await firebaseAuth.sendEmailVerification(userCredential.user);
+        addToast("Conta criada com sucesso! Verifique seu email.", 'success');
+
         await handleAuthSuccess(userCredential.user, username);
       } else {
         const userCredential = await firebaseAuth.signInWithEmailAndPassword(auth, email, password);
         await handleAuthSuccess(userCredential.user);
+        addToast("Login realizado com sucesso!", 'success');
       }
     } catch (err: any) {
-      setError(getErrorMessage(err));
+      const msg = getErrorMessage(err);
+      setError(msg);
+      addToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -229,17 +249,45 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             />
           </div>
 
-          <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 transition-colors">
+          <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 transition-colors relative">
             <Lock size={16} className="text-slate-400 dark:text-slate-500" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none flex-1"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
           </div>
+
+          {isRegistering && (
+            <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 transition-colors relative">
+              <Lock size={16} className="text-slate-400 dark:text-slate-500" />
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirmar Senha"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none flex-1"
+                required={isRegistering}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          )}
 
           {/* Create vs Join Toggle (Only for Registration) */}
           {isRegistering && (

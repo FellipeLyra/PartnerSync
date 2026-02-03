@@ -8,9 +8,10 @@ import {
     where,
     getDocs,
     setDoc,
+    getDoc,
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { Project } from '../types';
+import { Project, Task, User } from '../types';
 import { deepSanitize, mapDoc } from './core/firebaseUtils';
 
 export const projectService = {
@@ -172,5 +173,90 @@ export const projectService = {
 
         await setDoc(doc(db, 'projects', project.id), { tasks: updatedTasks }, { merge: true });
         return project.name;
+    },
+
+    assignProjectToUser: async (projectId: string, userId: string) => {
+        if (!db) throw new Error("Database not initialized");
+        const projectRef = doc(db, 'projects', projectId);
+        await setDoc(projectRef, { assignedUserId: userId }, { merge: true });
+    },
+
+    ensureUserProject: async (companyId: string, userId: string, username: string): Promise<Project> => {
+        if (!db) throw new Error("Database not initialized");
+
+        // 1. Try to find existing project for this user
+        const q = query(
+            collection(db, 'projects'),
+            where('companyId', '==', companyId),
+            where('assignedUserId', '==', userId)
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            return mapDoc(snapshot.docs[0]) as Project;
+        }
+
+        // 2. Create new project if none exists
+        const newProject: Project = {
+            id: '', // Will be set by createProject
+            companyId,
+            name: `Projeto de ${username}`,
+            description: `Projeto pessoal de ${username}`,
+            tasks: [],
+            assignedUserId: userId,
+            createdAt: Date.now()
+        };
+
+        const id = await projectService.createProject(newProject);
+        return { ...newProject, id };
+    },
+
+    moveTaskToProject: async (task: Task, sourceProjectId: string, targetProjectId: string) => {
+        if (!db) return;
+        if (sourceProjectId === targetProjectId) return;
+
+        try {
+            // 1. Get Source Project and remove task
+            const sourceRef = doc(db, 'projects', sourceProjectId);
+            const sourceSnap = await getDoc(sourceRef);
+
+            if (sourceSnap.exists()) {
+                const sourceData = sourceSnap.data() as Project;
+                const updatedSourceTasks = (sourceData.tasks || []).filter(t => t.id !== task.id);
+                await setDoc(sourceRef, { tasks: updatedSourceTasks }, { merge: true });
+            }
+
+            // 2. Get Target Project and add task
+            const targetRef = doc(db, 'projects', targetProjectId);
+            const targetSnap = await getDoc(targetRef);
+
+            if (targetSnap.exists()) {
+                const targetData = targetSnap.data() as Project;
+                const currentTargetTasks = targetData.tasks || [];
+
+                // Check if task already exists in target (idempotency)
+                if (!currentTargetTasks.some(t => t.id === task.id)) {
+                    await setDoc(targetRef, { tasks: [...currentTargetTasks, task] }, { merge: true });
+                }
+            }
+        } catch (error) {
+            console.error("Error moving task:", error);
+            throw error;
+        }
+    },
+
+    handleTaskAssignment: async (task: Task, sourceProjectId: string | null, companyId: string, users: User[]) => {
+        // Only run if there is an assignee and a source project to move FROM
+        if (!task.assignee || !sourceProjectId) return;
+
+        const assigneeUser = users.find(u => u.id === task.assignee);
+        if (!assigneeUser) return;
+
+        // Ensure user has a project
+        const targetProject = await projectService.ensureUserProject(companyId, assigneeUser.id, assigneeUser.username);
+
+        // Move if different
+        if (targetProject.id && sourceProjectId !== targetProject.id) {
+            await projectService.moveTaskToProject(task, sourceProjectId, targetProject.id);
+        }
     }
 };
